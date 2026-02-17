@@ -4,3 +4,5 @@
 - https://tristam.ie/2024/1126/?utm_source=makerworld_esp32-s3-voice-assistant
 - 
 https://smarthomecircle.com/How-to-setup-on-device-wake-word-for-voice-assistant-home-assistant
+- 
+https://youtu.be/C5hhSK7wqWI?is=f0BvUTwCXv-JyTPC
