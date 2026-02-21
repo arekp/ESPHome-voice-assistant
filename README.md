@@ -1,20 +1,20 @@
 # ESPHome Voice Assistant
 
-ESP32-S3 based voice assistant with local wake word detection for Home Assistant integration.
+Asystent głosowy oparty na ESP32-S3 z lokalnym wykrywaniem słowa budzącego dla integracji z Home Assistant.
 
-## Overview
+## Opis
 
-This project provides a complete ESPHome configuration for building a voice assistant using ESP32-S3 with local wake word detection. The system integrates seamlessly with Home Assistant for smart home control.
+Ten projekt dostarcza kompletną konfigurację ESPHome do budowy asystenta głosowego używającego ESP32-S3 z lokalnym wykrywaniem słowa budzącego. System bezproblemowo integruje się z Home Assistant do sterowania inteligentnym domem.
 
-## Hardware Requirements
+## Wymagania Sprzętowe
 
-- **ESP32-S3** (ESP32-S3-DevKitC-1 recommended)
-- **INMP441** MEMS microphone
-- **MAX98357A** audio amplifier/DAC
-- **WS2812** LED strip (8 LEDs)
-- **3W speaker** (Dayton Audio DMA45-4 recommended)
+- **ESP32-S3** (zalecany ESP32-S3-DevKitC-1)
+- **INMP441** mikrofon MEMS
+- **MAX98357A** wzmacniacz audio/DAC
+- **WS2812** pasek LED (8 diod)
+- **Głośnik 3W** (zalecany Dayton Audio DMA45-4)
 
-## Circuit Diagram
+## Schemat Połączeń
 
 ```
 ESP32-S3        INMP441        MAX98357A        WS2812
@@ -26,53 +26,53 @@ GPIO7           BLCK            -               -
 GPIO4           SD              -               -
 GPIO8           -               DIN             -
 GPIO16          -               -               DIN
-GPIO48          -               -               (on-board LED)
+GPIO48          -               -               (LED wbudowany)
 ```
 
-**Notes:**
-- Connect 5V to MAX98357A for better audio quality
-- Use 20 AWG wires for connections
-- Add 20Ω resistor to speaker for volume reduction
+**Uwagi:**
+- Podłącz 5V do MAX98357A dla lepszej jakości audio
+- Używaj kabli 20 AWG do połączeń
+- Dodaj rezystor 20Ω do głośnika dla redukcji głośności
 
-## Software Setup
+## Konfiguracja Oprogramowania
 
-### 1. Home Assistant Configuration
+### 1. Konfiguracja Home Assistant
 
-Install required Home Assistant Addons:
-- **Whisper** - Speech-to-text
-- **Piper** - Text-to-speech
-- **Voice Assist** - Voice pipeline
+Zainstaluj wymagane dodatki Home Assistant:
+- **Whisper** - Zamiana mowy na tekst
+- **Piper** - Zamiana tekstu na mowę
+- **Voice Assist** - Potok głosowy
 
-### 2. ESPHome Configuration
+### 2. Konfiguracja ESPHome
 
-Copy `esphome.yaml` to your ESPHome dashboard and configure:
-- WiFi credentials (`!secret wifi_ssid`, `!secret wifi_password`)
-- Home Assistant API encryption key
+Skopiuj `esphome.yaml` do dashboardu ESPHome i skonfiguruj:
+- Dane WiFi (`!secret wifi_ssid`, `!secret wifi_password`)
+- Klucz szyfrowania API Home Assistant
 
-### 3. Flashing
+### 3. Flashowanie
 
-Flash the ESP32-S3 using ESPHome web flasher or CLI.
+Flashuj ESP32-S3 przy użyciu web flashera ESPHome lub CLI.
 
-## Features
+## Funkcje
 
-- **Local Wake Word Detection**: "hey_jarvis" using Micro Wake Word
-- **LED Feedback**: RGB LED bar with scanning effect on wake word
-- **Mute Control**: Physical mute button for privacy
-- **OTA Updates**: Over-the-air firmware updates
-- **Noise Suppression**: Advanced audio processing
-- **Volume Control**: Configurable audio output
+- **Lokalne Wykrywanie Słowa Budzącego**: "hey_jarvis" przy użyciu Micro Wake Word
+- **Feedback LED**: Pasek LED RGB z efektem skanowania przy słowie budzącym
+- **Kontrola Wyciszenia**: Przycisk wyciszenia dla prywatności
+- **OTA Updates**: Aktualizacje oprogramowania przez sieć
+- **Redukcja Szumów**: Zaawansowana obróbka audio
+- **Kontrola Głośności**: Konfigurowalne wyjście audio
 
-## Usage
+## Użycie
 
-1. Say "hey_jarvis" to activate
-2. LED bar will scan and turn white
-3. Speak your command after the tone
-4. Assistant processes and responds
-5. LED turns off when done
+1. Powiedz "hey_jarvis" aby aktywować
+2. Pasek LED zeskanuje i zmieni kolor na biały
+3. Mów polecenie po sygnale
+4. Asystent przetwarza i odpowiada
+5. LED wyłącza się po zakończeniu
 
-## Configuration Details
+## Szczegóły Konfiguracji
 
-### Audio Settings
+### Ustawienia Audio
 ```yaml
 bits_per_sample: 32bit
  sample_rate: 16000
@@ -80,40 +80,40 @@ bits_per_sample: 32bit
  volume_multiplier: 4.0
 ```
 
-### LED Effects
-- **Idle**: Green pulsing
-- **Wake Word**: White scanning
-- **Listening**: White solid
-- **Processing**: Blue fast pulse
+### Efekty LED
+- **Bezczynność**: Zielone pulsowanie
+- **Słowo Budzące**: Białe skanowanie
+- **Słuchanie**: Białe stałe
+- **Przetwarzanie**: Niebieskie szybkie pulsujące
 
-## Integration
+## Integracja
 
-The assistant integrates with Home Assistant entities for:
-- Light control
-- Switch control
-- Media playback
-- Custom scripts
+Asystent integruje się z encjami Home Assistant dla:
+- Sterowania oświetleniem
+- Sterowania przełącznikami
+- Odtwarzania mediów
+- Własnych skryptów
 
-## Troubleshooting
+## Rozwiązywanie Problemów
 
-### Common Issues
-- **No audio output**: Check MAX98357A 5V connection
-- **Wake word not detected**: Adjust microphone gain
-- **LED not working**: Verify WS2812 data pin
+### Częste Problemy
+- **Brak wyjścia audio**: Sprawdź połączenie 5V MAX98357A
+- **Nie wykryto słowa budzącego**: Dostosuj wzmocnienie mikrofonu
+- **LED nie działa**: Sprawdź pin danych WS2812
 
-### Debug Mode
-Enable logging in ESPHome for detailed diagnostics:
+### Tryb Debug
+Włącz logowanie w ESPHome dla szczegółowej diagnostyki:
 ```yaml
 logger:
   level: DEBUG
 ```
 
-## Resources
+## Zasoby
 
-- [ESPHome Documentation](https://esphome.io/)
+- [Dokumentacja ESPHome](https://esphome.io/)
 - [Micro Wake Word](https://github.com/kahrendt/microWakeWord)
 - [Home Assistant Voice](https://www.home-assistant.io/blog/2023/12/13/year-of-the-voice-chapter-5/)
 
-## License
+## Licencja
 
-MIT License - See LICENSE file for details.
+Licencja MIT - Szczegóły w pliku LICENSE.
