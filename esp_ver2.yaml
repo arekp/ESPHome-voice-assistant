@@ -31,6 +31,7 @@ wifi:
     password: "xxxxx"
 
 captive_portal:
+captive_portal:
 # ---------------------------------------------------------
 # STAN ASYSTENTA (Globalna zmienna dla wyświetlacza)
 # 0 = Idle (Czuwanie/WakeWord), 1 = Listening (Nasłuch), 
@@ -81,7 +82,7 @@ speaker:
 micro_wake_word:
   id: wake_word_engine
   models:
-    - model: hey_jarvis 
+    - model: /config/esphome/models/okay_nabu.json
   on_wake_word_detected:
     # Po wykryciu hasła:
     - logger.log: "Wake Word detected! Starting Assistant..."
