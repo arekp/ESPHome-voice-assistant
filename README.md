@@ -53,45 +53,6 @@ Jeśli używasz mikrofonu I2S, sugerowane piny:
 | **WS** | GPIO 15 | Word Select |
 | **SD** | GPIO 17 | Serial Data |
 
----## Schemat Połączeń (Pinout)
-
-Poniższa tabela przedstawia bezpieczne połączenia dla **ESP32-S3 DevKitC-1**, które nie kolidują z pamięcią Flash/PSRAM oraz wbudowanymi funkcjami.
-
-### 1. Wzmacniacz Audio (MAX98357A)
-Wzmacniacz obsługuje komunikację I2S dla głośnika.
-
-| MAX98357A Pin | ESP32-S3 GPIO | Opis |
-| :--- | :--- | :--- |
-| **Vin** | 5V | Zasilanie (zalecane 5V dla większej mocy) |
-| **GND** | GND | Masa |
-| **LRC (WS)** | GPIO 45 | Word Select / Left-Right Clock |
-| **BCLK** | GPIO 47 | Bit Clock |
-| **DIN** | GPIO 48 | Data In |
-| **SD** | Niepodłączony | Tryb Stereo/Mute (opcjonalnie) |
-
-### 2. Wyświetlacz LCD (GC9A01 - SPI)
-Okrągły wyświetlacz 1.28" IPS.
-
-| Wyświetlacz Pin | ESP32-S3 GPIO | Opis |
-| :--- | :--- | :--- |
-| **VCC** | 3.3V | Zasilanie |
-| **GND** | GND | Masa |
-| **SCL (SCK)** | GPIO 12 | SPI Clock |
-| **SDA (MOSI)** | GPIO 11 | SPI Data |
-| **RES** | GPIO 13 | Reset |
-| **DC** | GPIO 9 | Data / Command Selection |
-| **CS** | GPIO 10 | Chip Select |
-| **BLK** | GPIO 14 | Podświetlenie (PWM) |
-
-### 3. Mikrofon I2S (np. INMP441)
-Jeśli używasz mikrofonu I2S, sugerowane piny:
-
-| Mikrofon Pin | ESP32-S3 GPIO | Opis |
-| :--- | :--- | :--- |
-| **SCK** | GPIO 16 | Serial Clock |
-| **WS** | GPIO 15 | Word Select |
-| **SD** | GPIO 17 | Serial Data |
-
 ---
 
 ## Konfiguracja Oprogramowania
