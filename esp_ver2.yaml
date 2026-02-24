@@ -31,7 +31,6 @@ wifi:
     password: "xxxxx"
 
 captive_portal:
-
 # ---------------------------------------------------------
 # STAN ASYSTENTA (Globalna zmienna dla wyświetlacza)
 # 0 = Idle (Czuwanie/WakeWord), 1 = Listening (Nasłuch), 
@@ -133,7 +132,7 @@ voice_assistant:
     - micro_wake_word.start:
 
 # ---------------------------------------------------------
-# WYŚWIETLACZ I GRAFIKA (TWARZ)
+# WYŚWIETLACZ I GRAFIKA (TWARZ) (ILI9xxx - GC9A01A)
 # ---------------------------------------------------------
 spi:
   clk_pin: GPIO12
@@ -158,13 +157,15 @@ font:
     size: 20
 
 display:
-  - platform: gc9a01
+  - platform: ili9xxx
+    model: GC9A01A
     id: my_display
     cs_pin: GPIO10
     dc_pin: GPIO9
     reset_pin: GPIO13
     rotation: 0
     update_interval: 100ms # Płynna animacja
+    
     lambda: |-
       // --- ZMIENNE ---
       int state = id(va_state);
