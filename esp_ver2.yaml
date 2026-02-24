@@ -1,0 +1,218 @@
+substitutions:
+  name: "voice-assistant-s3"
+  friendly_name: "Voice Assistant"
+  wifi_ssid: "TWOJE_WIFI_SSID"
+  wifi_password: "TWOJE_HASLO_WIFI"
+
+esphome:
+  name: ${name}
+  friendly_name: ${friendly_name}
+  min_version: 2023.12.0
+  platformio_options:
+    board_build.flash_mode: dio
+
+esp32:
+  board: esp32-s3-devkitc-1
+  framework:
+    type: esp-idf
+
+logger:
+  hardware_uart: USB_SERIAL_JTAG
+  level: INFO
+
+api:
+
+ota:
+  - platform: esphome
+
+wifi:
+  ssid: ${wifi_ssid}
+  password: ${wifi_password}
+  ap:
+    ssid: "Voice-Assistant-Fallback"
+    password: "fallback_pass"
+
+# ---------------------------------------------------------
+# ZMIENNE GLOBALNE (Stan asystenta)
+# 0 = Idle, 1 = Listening, 2 = Thinking, 3 = Speaking
+# ---------------------------------------------------------
+globals:
+  - id: va_state
+    type: int
+    restore_value: no
+    initial_value: '0'
+
+# ---------------------------------------------------------
+# MAGISTRALE I2S (Rozdzielone dla stabilności)
+# ---------------------------------------------------------
+i2s_audio:
+  # Magistrala dla mikrofonu (Input) - Piny "Wysokie"
+  - id: i2s_in
+    i2s_lrclk_pin: GPIO40
+    i2s_bclk_pin: GPIO41
+  
+  # Magistrala dla głośnika (Output) - Piny "Niskie"
+  - id: i2s_out
+    i2s_lrclk_pin: GPIO4
+    i2s_bclk_pin: GPIO5
+
+# ---------------------------------------------------------
+# KOMPONENTY AUDIO
+# ---------------------------------------------------------
+microphone:
+  - platform: i2s_audio
+    id: board_microphone
+    i2s_audio_id: i2s_in
+    i2s_din_pin: GPIO42
+    adc_type: external
+    pdm: false
+    channel: left  # INMP441: L/R zwarte do GND
+
+speaker:
+  - platform: i2s_audio
+    id: board_speaker
+    i2s_audio_id: i2s_out
+    i2s_dout_pin: GPIO6
+    dac_type: external
+    mode: mono
+
+# ---------------------------------------------------------
+# VOICE ASSISTANT (Logika stanów)
+# ---------------------------------------------------------
+voice_assistant:
+  microphone: board_microphone
+  speaker: board_speaker
+  
+  on_listening:
+    - globals.set:
+        id: va_state
+        value: '1'
+  
+  on_stt_end:
+    - globals.set:
+        id: va_state
+        value: '2'
+
+  on_tts_start:
+    - globals.set:
+        id: va_state
+        value: '3'
+
+  on_end:
+    - delay: 1s
+    - globals.set:
+        id: va_state
+        value: '0'
+  
+  on_error:
+    - globals.set:
+        id: va_state
+        value: '0'
+
+# ---------------------------------------------------------
+# WYŚWIETLACZ I GRAFIKA
+# ---------------------------------------------------------
+spi:
+  clk_pin: GPIO12
+  mosi_pin: GPIO11
+
+output:
+  - platform: ledc
+    pin: GPIO14
+    id: backlight_pwm
+    frequency: 1000Hz
+
+light:
+  - platform: monetary_output
+    output: backlight_pwm
+    name: "Display Backlight"
+    id: display_backlight
+    restore_mode: ALWAYS_ON
+
+font:
+  - file: "gfonts://Roboto"
+    id: font_main
+    size: 20
+
+display:
+  - platform: gc9a01
+    id: my_display
+    cs_pin: GPIO10
+    dc_pin: GPIO9
+    reset_pin: GPIO13
+    rotation: 0
+    update_interval: 100ms # Szybkie odświeżanie dla animacji
+    lambda: |-
+      // --- KONFIGURACJA KOLORÓW I POZYCJI ---
+      int state = id(va_state);
+      long now = millis();
+      
+      // Pozycje oczu (zakładając ekran 240x240)
+      int center_x = 120;
+      int center_y = 120;
+      int eye_offset_x = 50;
+      int eye_y = 100;
+      int eye_radius = 25;
+      
+      Color eye_color = Color::WHITE;
+      
+      // Tło
+      it.fill(Color::BLACK);
+
+      // --- LOGIKA STANÓW ---
+      
+      // Stan 1: Listening (Słuchanie) - Zielone, duże oczy
+      if (state == 1) {
+        eye_color = Color::GREEN;
+        eye_radius = 35; 
+      }
+      
+      // Stan 2: Thinking (Myślenie) - Żółte, skaczące oczy
+      else if (state == 2) {
+        eye_color = Color::YELLOW;
+        // Animacja góra-dół co 200ms
+        if ((now / 200) % 2 == 0) {
+          eye_y -= 5;
+        } else {
+          eye_y += 5;
+        }
+      }
+      
+      // Stan 3: Speaking (Mówienie) - Niebieskie oczy + animacja ust
+      else if (state == 3) {
+        eye_color = Color(100, 100, 255); // Jasny niebieski
+        
+        // Animacja ust (fala dźwiękowa - prosta symulacja)
+        int mouth_h = 2 + (sin(now / 100.0) * 10); 
+        if (mouth_h < 2) mouth_h = 2;
+        
+        // Rysuj usta
+        it.filled_rectangle(center_x - 30, 170 - mouth_h, 60, mouth_h * 2, Color::WHITE);
+      }
+      
+      // Stan 0: Idle (Spoczynek) - Mruganie
+      else {
+        eye_color = Color::WHITE;
+        
+        // Logika mrugania: zamknij oczy na 150ms co 3.5 sekundy
+        bool blink = (now % 3500 < 150);
+        
+        if (blink) {
+            // Zamknięte oczy (poziome kreski)
+            it.line(center_x - eye_offset_x - 20, eye_y, center_x - eye_offset_x + 20, eye_y, eye_color);
+            it.line(center_x + eye_offset_x - 20, eye_y, center_x + eye_offset_x + 20, eye_y, eye_color);
+            return; // Zakończ rysowanie, nie rysuj otwartych
+        }
+      }
+
+      // --- RYSOWANIE OCZU (OTWARTYCH) ---
+      // Lewe oko
+      it.filled_circle(center_x - eye_offset_x, eye_y, eye_radius, eye_color);
+      // Prawe oko
+      it.filled_circle(center_x + eye_offset_x, eye_y, eye_radius, eye_color);
+
+      // Opcjonalnie: Źrenice (Czarne kropki w środku, żeby wyglądało bardziej jak twarz)
+      if (state != 1) { // Nie rysuj źrenic w trybie nasłuchu (wygląda jak "active")
+        it.filled_circle(center_x - eye_offset_x, eye_y, eye_radius / 3, Color::BLACK);
+        it.filled_circle(center_x + eye_offset_x, eye_y, eye_radius / 3, Color::BLACK);
+      }
