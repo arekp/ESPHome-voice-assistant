@@ -14,27 +14,94 @@ Ten projekt dostarcza kompletną konfigurację ESPHome do budowy asystenta głos
 - **WS2812** pasek LED (8 diod)
 - **Głośnik 3W** (zalecany Dayton Audio DMA45-4)
 
-## Schemat Połączeń
+## Schemat Połączeń (Pinout)
 
-```
-ESP32-S3        INMP441        MAX98357A        WS2812
---------------- --------------- --------------- -------------
-3V3             VCC             5V              VCC
-GND             GND             GND             GND
-GPIO6           LRC             -               -
-GPIO7           BLCK            -               -
-GPIO4           SD              -               -
-GPIO8           -               DIN             -
-GPIO16          -               -               DIN
-GPIO48          -               -               (LED wbudowany)
-```
+Poniższa tabela przedstawia bezpieczne połączenia dla **ESP32-S3 DevKitC-1**, które nie kolidują z pamięcią Flash/PSRAM oraz wbudowanymi funkcjami.
 
-**Uwagi:**
-- Podłącz 5V do MAX98357A dla lepszej jakości audio
-- Używaj kabli 20 AWG do połączeń
-- Dodaj rezystor 20Ω do głośnika dla redukcji głośności
+### 1. Wzmacniacz Audio (MAX98357A)
+Wzmacniacz obsługuje komunikację I2S dla głośnika.
+
+| MAX98357A Pin | ESP32-S3 GPIO | Opis |
+| :--- | :--- | :--- |
+| **Vin** | 5V | Zasilanie (zalecane 5V dla większej mocy) |
+| **GND** | GND | Masa |
+| **LRC (WS)** | GPIO 45 | Word Select / Left-Right Clock |
+| **BCLK** | GPIO 47 | Bit Clock |
+| **DIN** | GPIO 48 | Data In |
+| **SD** | Niepodłączony | Tryb Stereo/Mute (opcjonalnie) |
+
+### 2. Wyświetlacz LCD (GC9A01 - SPI)
+Okrągły wyświetlacz 1.28" IPS.
+
+| Wyświetlacz Pin | ESP32-S3 GPIO | Opis |
+| :--- | :--- | :--- |
+| **VCC** | 3.3V | Zasilanie |
+| **GND** | GND | Masa |
+| **SCL (SCK)** | GPIO 12 | SPI Clock |
+| **SDA (MOSI)** | GPIO 11 | SPI Data |
+| **RES** | GPIO 13 | Reset |
+| **DC** | GPIO 9 | Data / Command Selection |
+| **CS** | GPIO 10 | Chip Select |
+| **BLK** | GPIO 14 | Podświetlenie (PWM) |
+
+### 3. Mikrofon I2S (np. INMP441)
+Jeśli używasz mikrofonu I2S, sugerowane piny:
+
+| Mikrofon Pin | ESP32-S3 GPIO | Opis |
+| :--- | :--- | :--- |
+| **SCK** | GPIO 16 | Serial Clock |
+| **WS** | GPIO 15 | Word Select |
+| **SD** | GPIO 17 | Serial Data |
+
+---## Schemat Połączeń (Pinout)
+
+Poniższa tabela przedstawia bezpieczne połączenia dla **ESP32-S3 DevKitC-1**, które nie kolidują z pamięcią Flash/PSRAM oraz wbudowanymi funkcjami.
+
+### 1. Wzmacniacz Audio (MAX98357A)
+Wzmacniacz obsługuje komunikację I2S dla głośnika.
+
+| MAX98357A Pin | ESP32-S3 GPIO | Opis |
+| :--- | :--- | :--- |
+| **Vin** | 5V | Zasilanie (zalecane 5V dla większej mocy) |
+| **GND** | GND | Masa |
+| **LRC (WS)** | GPIO 45 | Word Select / Left-Right Clock |
+| **BCLK** | GPIO 47 | Bit Clock |
+| **DIN** | GPIO 48 | Data In |
+| **SD** | Niepodłączony | Tryb Stereo/Mute (opcjonalnie) |
+
+### 2. Wyświetlacz LCD (GC9A01 - SPI)
+Okrągły wyświetlacz 1.28" IPS.
+
+| Wyświetlacz Pin | ESP32-S3 GPIO | Opis |
+| :--- | :--- | :--- |
+| **VCC** | 3.3V | Zasilanie |
+| **GND** | GND | Masa |
+| **SCL (SCK)** | GPIO 12 | SPI Clock |
+| **SDA (MOSI)** | GPIO 11 | SPI Data |
+| **RES** | GPIO 13 | Reset |
+| **DC** | GPIO 9 | Data / Command Selection |
+| **CS** | GPIO 10 | Chip Select |
+| **BLK** | GPIO 14 | Podświetlenie (PWM) |
+
+### 3. Mikrofon I2S (np. INMP441)
+Jeśli używasz mikrofonu I2S, sugerowane piny:
+
+| Mikrofon Pin | ESP32-S3 GPIO | Opis |
+| :--- | :--- | :--- |
+| **SCK** | GPIO 16 | Serial Clock |
+| **WS** | GPIO 15 | Word Select |
+| **SD** | GPIO 17 | Serial Data |
+
+---
 
 ## Konfiguracja Oprogramowania
+
+Upewnij się, że w Twoim pliku `.yaml` sekcje `i2s_audio` i `display` korzystają z powyższych pinów.
+
+### Dlaczego takie piny?
+1.  **Piny 45, 47, 48 (Audio):** Są to piny często używane w zestawach deweloperskich ESP32-S3 do audio, są bezpieczne i nie kolidują z systemem bootowania (w przeciwieństwie do np. GPIO 0 czy GPIO 46 w niektórych stanach).
+2.  **Piny 9-14 (SPI):** Są zgrupowane fizycznie blisko siebie na DevKicie, co ułatwia prowadzenie przewodów, i nie kolidują z pamięcią Octal SPI Flash/PSRAM (która zajmuje piny 26-32).
+3.  **MAX98357A:** Ten układ automatycznie miksuje kanał lewy i prawy do mono, jeśli pin SD jest niepodłączony, co jest idealne dla prostego asystenta głosowego.
 
 ### 1. Konfiguracja Home Assistant
 
@@ -51,7 +118,7 @@ Skopiuj `esphome.yaml` do dashboardu ESPHome i skonfiguruj:
 
 ### 3. Flashowanie
 
-Flashuj ESP32-S3 przy użyciu web flashera ESPHome lub CLI.
+Flashuj ESP32-S3 DevKitC-1 przy użyciu web flashera ESPHome lub CLI.
 
 ## Funkcje
 
