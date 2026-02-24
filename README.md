@@ -139,6 +139,7 @@ logger:
 - [Home Assistant Voice](https://www.home-assistant.io/blog/2023/12/13/year-of-the-voice-chapter-5/)
 - [film prezentujacy asystenata](https://youtu.be/aDaSp6zaqWM?is=lCuZWlRpG83gZBLt)
 - [Dokumentacja wyswietlacza](https://sklep.msalamon.pl/produkt/okragly-wyswietlacz-tft-ips-128-niebiesk/?srsltid=AfmBOor6AoACia8Q1M1vcqE8KNbGT7DDmXIn7yjRObGVehSrhEy6dq4l)
+- [Pobieranie slow wybudzenia](https://github.com/esphome/micro-wake-word-models/blob/main/models/v2/hey_jarvis.json)
 
 ## Licencja
 
