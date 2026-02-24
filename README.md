@@ -113,6 +113,7 @@ logger:
 - [Dokumentacja ESPHome](https://esphome.io/)
 - [Micro Wake Word](https://github.com/kahrendt/microWakeWord)
 - [Home Assistant Voice](https://www.home-assistant.io/blog/2023/12/13/year-of-the-voice-chapter-5/)
+- [film prezentujacy asystenata](https://youtu.be/aDaSp6zaqWM?is=lCuZWlRpG83gZBLt)
 
 ## Licencja
 
