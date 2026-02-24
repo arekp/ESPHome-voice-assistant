@@ -168,77 +168,79 @@ display:
     update_interval: 100ms # Płynna animacja
     
     lambda: |-
-      // --- ZMIENNE ---
-      int state = id(va_state);
-      long now = millis();
-      
-      // Parametry twarzy (240x240)
-      int cx = 120; // Środek X
-      int cy = 100; // Wysokość oczu
-      int eye_dist = 50; // Rozstaw oczu
-      int eye_r = 25; // Promień oka
-      
-      Color col = Color(255, 255, 255);
-      
-      // Czyszczenie ekranu
-      it.fill(Color::BLACK);
+          // --- ZMIENNE ---
+          // Pobieramy stan (upewnij się, że va_state to global lub sensor zwracający int)
+          int state = id(va_state); 
+          long now = millis();
+          
+          // Parametry twarzy (240x240)
+          int cx = 120; // Środek X
+          int cy = 100; // Wysokość oczu
+          int eye_dist = 50; // Rozstaw oczu
+          int eye_r = 25; // Promień oka
+          
+          // Domyślny kolor biały
+          Color col = Color(255, 255, 255);
+          
+          // Czyszczenie ekranu - Color(0,0,0) zamiast Color::BLACK
+          it.fill(Color(0, 0, 0));
 
-      // --- MASZYNA STANÓW (ANIMACJE) ---
+          // --- MASZYNA STANÓW (ANIMACJE) ---
 
-      // STAN 1: LISTENING (Nasłuch) -> Zielone, szerokie oczy
-      if (state == 1) {
-        col = Color(0, 255, 0);
-        eye_r = 35; // Powiększone
-        // Rysuj oczy
-        it.filled_circle(cx - eye_dist, cy, eye_r, col);
-        it.filled_circle(cx + eye_dist, cy, eye_r, col);
-        
-        it.print(cx, 180, id(font_main), col, TextAlign::CENTER, "Słucham...");
-      }
-      
-      // STAN 2: THINKING (Myślenie) -> Żółte, skaczące oczy
-      else if (state == 2) {
-        col = Color(255, 255, 0);
-        // Prosta animacja góra/dół
-        int offset = (int)(sin(now / 100.0) * 10);
-        
-        it.filled_circle(cx - eye_dist, cy + offset, eye_r, col);
-        it.filled_circle(cx + eye_dist, cy - offset, eye_r, col); // Przeciwfaza
-        
-        it.print(cx, 180, id(font_main), col, TextAlign::CENTER, "Myślę...");
-      }
-      
-      // STAN 3: SPEAKING (Mówienie) -> Niebieskie oczy + USTA
-      else if (state == 3) {
-        col = Color(50, 150, 255); // Niebieski
-        
-        // Oczy
-        it.filled_circle(cx - eye_dist, cy, eye_r, col);
-        it.filled_circle(cx + eye_dist, cy, eye_r, col);
-        // Źrenice
-        it.filled_circle(cx - eye_dist, cy, 10, Color::BLACK);
-        it.filled_circle(cx + eye_dist, cy, 10, Color::BLACK);
+          // STAN 1: LISTENING (Nasłuch) -> Zielone, szerokie oczy
+          if (state == 1) {
+            col = Color(0, 255, 0); // ZIELONY
+            eye_r = 35; // Powiększone
+            // Rysuj oczy
+            it.filled_circle(cx - eye_dist, cy, eye_r, col);
+            it.filled_circle(cx + eye_dist, cy, eye_r, col);
+            
+            it.print(cx, 180, id(font_main), col, TextAlign::CENTER, "Słucham...");
+          }
+          
+          // STAN 2: THINKING (Myślenie) -> Żółte, skaczące oczy
+          else if (state == 2) {
+            col = Color(255, 255, 0); // ŻÓŁTY
+            // Prosta animacja góra/dół
+            int offset = (int)(sin(now / 100.0) * 10);
+            
+            it.filled_circle(cx - eye_dist, cy + offset, eye_r, col);
+            it.filled_circle(cx + eye_dist, cy - offset, eye_r, col); // Przeciwfaza
+            
+            it.print(cx, 180, id(font_main), col, TextAlign::CENTER, "Myślę...");
+          }
+          
+          // STAN 3: SPEAKING (Mówienie) -> Niebieskie oczy + USTA
+          else if (state == 3) {
+            col = Color(50, 150, 255); // NIEBIESKI
+            
+            // Oczy
+            it.filled_circle(cx - eye_dist, cy, eye_r, col);
+            it.filled_circle(cx + eye_dist, cy, eye_r, col);
+            // Źrenice - Color(0,0,0) zamiast Color::BLACK
+            it.filled_circle(cx - eye_dist, cy, 10, Color(0, 0, 0));
+            it.filled_circle(cx + eye_dist, cy, 10, Color(0, 0, 0));
 
-        // Animacja ust (prostokąt zmieniający wysokość)
-        int mouth_h = 5 + abs((int)(sin(now / 80.0) * 20));
-        it.filled_rectangle(cx - 30, 160 - (mouth_h/2), 60, mouth_h, Color::WHITE);
-      }
-      
-      // STAN 0: IDLE (Czuwanie) -> Mruganie co 4 sekundy
-      else {
-        col = Color::WHITE;
-        bool blink = (now % 4000 < 150); // Mrugnij przez 150ms
-        
-        if (blink) {
-          // Zamknięte powieki
-          it.line(cx - eye_dist - 20, cy, cx - eye_dist + 20, cy, col);
-          it.line(cx + eye_dist - 20, cy, cx + eye_dist + 20, cy, col);
-        } else {
-          // Otwarte oczy
-          it.filled_circle(cx - eye_dist, cy, eye_r, col);
-          it.filled_circle(cx + eye_dist, cy, eye_r, col);
-          // Źrenice
-          it.filled_circle(cx - eye_dist, cy + 5, 8, Color::BLACK);
-          it.filled_circle(cx + eye_dist, cy + 5, 8, Color::BLACK);
-        }
-      }
+            // Animacja ust (prostokąt zmieniający wysokość)
+            int mouth_h = 5 + abs((int)(sin(now / 80.0) * 20));
+            it.filled_rectangle(cx - 30, 160 - (mouth_h/2), 60, mouth_h, Color(255, 255, 255));
+          }
+          
+          // STAN 0: IDLE (Czuwanie) -> Mruganie co 4 sekundy
+          else {
+            col = Color(255, 255, 255); // BIAŁY zamiast Color::WHITE
+            bool blink = (now % 4000 < 150); // Mrugnij przez 150ms
+            
+            if (blink) {
+              // Zamknięte powieki
+              it.line(cx - eye_dist - 20, cy, cx - eye_dist + 20, cy, col);
+              it.line(cx + eye_dist - 20, cy, cx + eye_dist + 20, cy, col);
+            } else {
+              // Otwarte oczy
+              it.filled_circle(cx - eye_dist, cy, eye_r, col);
+              it.filled_circle(cx + eye_dist, cy, eye_r, col);
+              // Źrenice - Color(0,0,0) zamiast Color::BLACK
+              it.filled_circle(cx - eye_dist, cy + 5, 8, Color(0, 0, 0));
+              it.filled_circle(cx + eye_dist, cy + 5, 8, Color(0, 0, 0));
+            }
+          }
