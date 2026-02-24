@@ -154,7 +154,7 @@ light:
     restore_mode: ALWAYS_ON
 
 font:
-  - file: "gfonts://Roboto"
+  - file: "Roboto-Bold.ttf"
     id: font_main
     size: 20
 
