@@ -178,7 +178,7 @@ display:
       int eye_dist = 50; // Rozstaw oczu
       int eye_r = 25; // Promień oka
       
-      Color col = Color::WHITE;
+      Color col = Color(255, 255, 255);
       
       // Czyszczenie ekranu
       it.fill(Color::BLACK);
@@ -187,7 +187,7 @@ display:
 
       // STAN 1: LISTENING (Nasłuch) -> Zielone, szerokie oczy
       if (state == 1) {
-        col = Color::GREEN;
+        col = Color(0, 255, 0);
         eye_r = 35; // Powiększone
         // Rysuj oczy
         it.filled_circle(cx - eye_dist, cy, eye_r, col);
@@ -198,7 +198,7 @@ display:
       
       // STAN 2: THINKING (Myślenie) -> Żółte, skaczące oczy
       else if (state == 2) {
-        col = Color::YELLOW;
+        col = Color(255, 255, 0);
         // Prosta animacja góra/dół
         int offset = (int)(sin(now / 100.0) * 10);
         
