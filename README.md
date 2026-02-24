@@ -23,8 +23,8 @@ Poniższa tabela przedstawia bezpieczne połączenia dla **ESP32-S3 DevKitC-1**,
 | **VDD** | **3.3V** | ⚠️ Podłączenie pod 5V uszkodzi mikrofon! |
 | **GND** | GND | |
 | **L/R** | GND | Wybór kanału Lewego |
-| **SCK** | GPIO 41 | Zegar |
 | **WS** | GPIO 40 | Word Select |
+| **SCK** | GPIO 41 | Zegar |
 | **SD** | GPIO 42 | Dane wyjściowe |
 
 ### 2. Głośnik (MAX98357A)
@@ -32,8 +32,8 @@ Poniższa tabela przedstawia bezpieczne połączenia dla **ESP32-S3 DevKitC-1**,
 | :--- | :--- | :--- |
 | **Vin** | **5V (VBUS)** | Zalecane 5V dla lepszej jakości dźwięku |
 | **GND** | GND | Wspólna masa |
-| **BCLK** | GPIO 5 | Bit Clock |
 | **LRC** | GPIO 4 | Word Select |
+| **BCLK** | GPIO 5 | Bit Clock |
 | **DIN** | GPIO 6 | Dane wejściowe |
 
 ### 3. Wyświetlacz (GC9A01)
@@ -41,11 +41,11 @@ Poniższa tabela przedstawia bezpieczne połączenia dla **ESP32-S3 DevKitC-1**,
 | :--- | :--- | :--- |
 | **VCC** | 3.3V | Zasilanie |
 | **GND** | GND | Masa |
-| **SCL** | GPIO 12 | SPI Clock |
-| **SDA** | GPIO 11 | SPI MOSI |
-| **RES** | GPIO 13 | Reset |
 | **DC** | GPIO 9 | Data/Command |
 | **CS** | GPIO 10 | Chip Select |
+| **SDA** | GPIO 11 | SPI MOSI |
+| **SCL** | GPIO 12 | SPI Clock |
+| **RES** | GPIO 13 | Reset |
 | **BLK** | GPIO 14 | Podświetlenie (PWM) |
 
 
