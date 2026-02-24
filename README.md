@@ -6,52 +6,48 @@ Asystent głosowy oparty na ESP32-S3 z lokalnym wykrywaniem słowa budzącego dl
 
 Ten projekt dostarcza kompletną konfigurację ESPHome do budowy asystenta głosowego używającego ESP32-S3 z lokalnym wykrywaniem słowa budzącego. System bezproblemowo integruje się z Home Assistant do sterowania inteligentnym domem.
 
-## Wymagania Sprzętowe
+## 🛠️ Wymagany Sprzęt
+1. **ESP32-S3 DevKitC-1** (Zalecana wersja N16R8 lub N8R8)
+2. **Wyświetlacz:** 1.28" Round IPS LCD (Sterownik GC9A01)
+3. **Mikrofon:** INMP441 (I2S, dookólny)
+4. **Wzmacniacz/DAC:** MAX98357A (I2S, 3W)
+5. Głośnik: 4Ω 3W
 
-- **ESP32-S3** (zalecany ESP32-S3-DevKitC-1)
-- **INMP441** mikrofon MEMS
-- **MAX98357A** wzmacniacz audio/DAC
-- **WS2812** pasek LED (8 diod)
-- **Głośnik 3W** (zalecany Dayton Audio DMA45-4)
-
-## Schemat Połączeń (Pinout)
+## 🔌 Schemat Połączeń (Pinout)
 
 Poniższa tabela przedstawia bezpieczne połączenia dla **ESP32-S3 DevKitC-1**, które nie kolidują z pamięcią Flash/PSRAM oraz wbudowanymi funkcjami.
 
-### 1. Wzmacniacz Audio (MAX98357A)
-Wzmacniacz obsługuje komunikację I2S dla głośnika.
-
-| MAX98357A Pin | ESP32-S3 GPIO | Opis |
+### 1. Mikrofon (INMP441)
+| Pin INMP441 | Pin ESP32-S3 | Uwagi |
 | :--- | :--- | :--- |
-| **Vin** | 5V | Zasilanie (zalecane 5V dla większej mocy) |
-| **GND** | GND | Masa |
-| **LRC (WS)** | GPIO 45 | Word Select / Left-Right Clock |
-| **BCLK** | GPIO 47 | Bit Clock |
-| **DIN** | GPIO 48 | Data In |
-| **SD** | Niepodłączony | Tryb Stereo/Mute (opcjonalnie) |
+| **VDD** | **3.3V** | ⚠️ Podłączenie pod 5V uszkodzi mikrofon! |
+| **GND** | GND | |
+| **L/R** | GND | Wybór kanału Lewego |
+| **SCK** | GPIO 41 | Zegar |
+| **WS** | GPIO 40 | Word Select |
+| **SD** | GPIO 42 | Dane wyjściowe |
 
-### 2. Wyświetlacz LCD (GC9A01 - SPI)
-Okrągły wyświetlacz 1.28" IPS.
+### 2. Głośnik (MAX98357A)
+| Pin MAX98357A | Pin ESP32-S3 | Uwagi |
+| :--- | :--- | :--- |
+| **Vin** | **5V (VBUS)** | Zalecane 5V dla lepszej jakości dźwięku |
+| **GND** | GND | Wspólna masa |
+| **BCLK** | GPIO 5 | Bit Clock |
+| **LRC** | GPIO 4 | Word Select |
+| **DIN** | GPIO 6 | Dane wejściowe |
 
-| Wyświetlacz Pin | ESP32-S3 GPIO | Opis |
+### 3. Wyświetlacz (GC9A01)
+| Pin GC9A01 | Pin ESP32-S3 | Funkcja |
 | :--- | :--- | :--- |
 | **VCC** | 3.3V | Zasilanie |
 | **GND** | GND | Masa |
-| **SCL (SCK)** | GPIO 12 | SPI Clock |
-| **SDA (MOSI)** | GPIO 11 | SPI Data |
+| **SCL** | GPIO 12 | SPI Clock |
+| **SDA** | GPIO 11 | SPI MOSI |
 | **RES** | GPIO 13 | Reset |
-| **DC** | GPIO 9 | Data / Command Selection |
+| **DC** | GPIO 9 | Data/Command |
 | **CS** | GPIO 10 | Chip Select |
 | **BLK** | GPIO 14 | Podświetlenie (PWM) |
 
-### 3. Mikrofon I2S (np. INMP441)
-Jeśli używasz mikrofonu I2S, sugerowane piny:
-
-| Mikrofon Pin | ESP32-S3 GPIO | Opis |
-| :--- | :--- | :--- |
-| **SCK** | GPIO 16 | Serial Clock |
-| **WS** | GPIO 15 | Word Select |
-| **SD** | GPIO 17 | Serial Data |
 
 ---
 
@@ -77,7 +73,7 @@ Skopiuj `esphome.yaml` do dashboardu ESPHome i skonfiguruj:
 - Dane WiFi (`!secret wifi_ssid`, `!secret wifi_password`)
 - Klucz szyfrowania API Home Assistant
 
-### 3. Flashowanie
+### 🚀3. Flashowanie
 
 Flashuj ESP32-S3 DevKitC-1 przy użyciu web flashera ESPHome lub CLI.
 
