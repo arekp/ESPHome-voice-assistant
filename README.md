@@ -27,6 +27,16 @@ Poniższa tabela przedstawia bezpieczne połączenia dla **ESP32-S3 DevKitC-1**,
 | **SCK** | GPIO 41 | Zegar |
 | **SD** | GPIO 42 | Dane wyjściowe |
 
+### 1. Mikrofon (INMP441) _V2
+| Pin INMP441 | Pin ESP32-S3 | Uwagi |
+| :--- | :--- | :--- |
+| **VDD** | **3.3V** | ⚠️ Podłączenie pod 5V uszkodzi mikrofon! |
+| **GND** | GND | |
+| **L/R** | GND | Wybór kanału Lewego |
+| **WS** | GPIO 15 | Word Select |
+| **SCK** | GPIO 16 | Zegar |
+| **SD** | GPIO 17 | Dane wyjściowe |
+
 ### 2. Głośnik (MAX98357A)
 | Pin MAX98357A | Pin ESP32-S3 | Uwagi |
 | :--- | :--- | :--- |
