@@ -18,6 +18,8 @@ Ten projekt dostarcza kompletną konfigurację ESPHome do budowy asystenta głos
 Poniższa tabela przedstawia bezpieczne połączenia dla **ESP32-S3 DevKitC-1**, które nie kolidują z pamięcią Flash/PSRAM oraz wbudowanymi funkcjami.
 
 ### 1. Mikrofon (INMP441)
+⚠️ Krytyczne ostrzeżenie o pinach
+W układach ESP32-S3 z Octal PSRAM (N16R8), piny od GPIO 33 do GPIO 37 oraz GPIO 40, 41 i 42 są wykorzystywane wewnętrznie do komunikacji z pamięcią RAM i Flash.
 | Pin INMP441 | Pin ESP32-S3 | Uwagi |
 | :--- | :--- | :--- |
 | **VDD** | **3.3V** | ⚠️ Podłączenie pod 5V uszkodzi mikrofon! |
@@ -27,7 +29,7 @@ Poniższa tabela przedstawia bezpieczne połączenia dla **ESP32-S3 DevKitC-1**,
 | **SCK** | GPIO 41 | Zegar |
 | **SD** | GPIO 42 | Dane wyjściowe |
 
-### 1. Mikrofon (INMP441) _V2
+### 1. Mikrofon (INMP441) _V2 dla plytki ver MON16R8
 | Pin INMP441 | Pin ESP32-S3 | Uwagi |
 | :--- | :--- | :--- |
 | **VDD** | **3.3V** | ⚠️ Podłączenie pod 5V uszkodzi mikrofon! |
