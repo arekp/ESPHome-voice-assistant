@@ -1,6 +1,6 @@
 # ESPHome Voice Assistant
 
-Asystent głosowy oparty na ESP32-S3 z lokalnym wykrywaniem słowa budzącego dla integracji z Home Assistant.
+Asystent głosowy oparty na ESP32-S3 N16R8 z lokalnym wykrywaniem słowa budzącego dla integracji z Home Assistant.
 
 ## Opis
 
