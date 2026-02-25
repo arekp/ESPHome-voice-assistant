@@ -39,6 +39,16 @@ W układach ESP32-S3 z Octal PSRAM (N16R8), piny od GPIO 33 do GPIO 37 oraz GPIO
 | **SCK** | GPIO 16 | Zegar |
 | **SD** | GPIO 17 | Dane wyjściowe |
 
+### 1. Mikrofon (INMP441) _V3 dla plytki ver MON16R8
+| Pin INMP441 | Pin ESP32-S3 | Uwagi |
+| :--- | :--- | :--- |
+| **VDD** | **3.3V** | ⚠️ Podłączenie pod 5V uszkodzi mikrofon! |
+| **GND** | GND | |
+| **L/R** | GND | Wybór kanału Lewego |
+| **WS** | GPIO 36 | Word Select |
+| **SCK** | GPIO 37 | Zegar |
+| **SD** | GPIO 39 | Dane wyjściowe |
+
 ### 2. Głośnik (MAX98357A)
 | Pin MAX98357A | Pin ESP32-S3 | Uwagi |
 | :--- | :--- | :--- |
