@@ -57,9 +57,9 @@ Zmień piny magistrali wejściowej (mikrofonu): Piny 36 i 37 na S3 z 8MB PSRAM p
 | **VDD** | **3.3V** | ⚠️ Podłączenie pod 5V uszkodzi mikrofon! |
 | **GND** | GND | |
 | **L/R** | GND | Wybór kanału Lewego |
-| **WS** | GPIO  | Word Select |
-| **SCK** | GPIO  | Zegar |
-| **SD** | GPIO  | Dane wyjściowe |
+| **WS** | GPIO3  | Word Select |
+| **SCK** | GPIO2  | Zegar |
+| **SD** | GPIO1  | Dane wyjściowe |
 
 ----
 ### 2. Głośnik (MAX98357A)
@@ -70,6 +70,16 @@ Zmień piny magistrali wejściowej (mikrofonu): Piny 36 i 37 na S3 z 8MB PSRAM p
 | **LRC** | GPIO 4 | Word Select |
 | **BCLK** | GPIO 5 | Bit Clock |
 | **DIN** | GPIO 6 | Dane wejściowe |
+
+### 2_1. Głośnik (MAX98357A)
+| Pin MAX98357A | Pin ESP32-S3 | Uwagi |
+| :--- | :--- | :--- |
+| **Vin** | **5V (VBUS)** | Zalecane 5V dla lepszej jakości dźwięku |
+| **GND** | GND | Wspólna masa |
+| **LRC** | GPIO 7 | Word Select |
+| **BCLK** | GPIO 8 | Bit Clock |
+| **DIN** | GPIO 18 | Dane wejściowe |
+
 
 ### 3. Wyświetlacz (GC9A01)
 | Pin GC9A01 | Pin ESP32-S3 | Funkcja |
