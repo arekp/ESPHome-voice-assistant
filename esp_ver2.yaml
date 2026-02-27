@@ -5,7 +5,347 @@ esphome:
 esp32:
   board: esp32-s3-devkitc-1
   variant: esp32s3
+  framework:# MON16R8
+esphome:
+  name: voice-assistant
+  friendly_name: voice-assistant
+  platformio_options:
+    build_flags: "-DBOARD_HAS_PSRAM"
+    board_build.arduino.memory_type: qio_opi
+  on_boot:
+    priority: -10
+    then:
+      - globals.set:
+          id: va_state
+          value: '0' # Zmień oczy na ŻÓŁTE (Thinking)
+      - delay: 1s
+      - micro_wake_word.start
+      # - delay: 3s
+      # - voice_assistant.start    
+
+esp32:
+  board: esp32-s3-devkitc-1
+  variant: esp32s3
+  flash_size: 16MB
+  # Jeśli stworzyłeś plik z poprzedniego kroku, odkomentuj poniższą linię:
+  # partitions: default_16MB.csv
   framework:
+    type: esp-idf
+    sdkconfig_options:
+      CONFIG_ESP32S3_DEFAULT_CPU_FREQ_240: y
+      CONFIG_ESP32S3_DATA_CACHE_64KB: y
+      CONFIG_ESP32S3_DATA_CACHE_LINE_64B: y
+      CONFIG_AUDIO_BOARD_CUSTOM: y    
+
+# Włączenie PSRAM - bez tego Wake Word nie zadziała!
+psram:
+  mode: octal
+  speed: 80MHz
+
+# Logi przez natywne USB (zazwyczaj port USB-OTG w S3)
+logger:
+  # level: VERY_VERBOSE # Zmień na VERY_VERBOSE jeśli chcesz widzieć każdy bajt (ale to spowalnia ESP)
+  level: DEBUG  # Zmień na VERY_VERBOSE jeśli chcesz widzieć każdy bajt (ale to spowalnia ESP)
+
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: "xxxx="
+
+ota:
+  - platform: esphome
+    password: "xxxx"
+
+wifi:
+  ssid: FunBox2-4493_24_EXT
+  password: xxxx
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Voice-Assistant Fallback Hotspot"
+    password: "xxxx"
+
+
+
+        
+captive_portal:
+# ---------------------------------------------------------
+# STAN ASYSTENTA (Globalna zmienna dla wyświetlacza)
+# 0 = Idle (Czuwanie/WakeWord), 1 = Listening (Nasłuch), 
+# 2 = Thinking (Przetwarzanie), 3 = Speaking (Mówienie)
+# ---------------------------------------------------------
+globals:
+  - id: va_state
+    type: int
+    restore_value: no
+    initial_value: '0'
+
+i2s_audio:
+  # Magistrala Mikrofonu (Input) - Piny "Wysokie"
+  - id: i2s_in
+    i2s_lrclk_pin: GPIO3
+    i2s_bclk_pin: GPIO2
+
+  
+  # Magistrala Głośnika (Output) - Piny "Niskie"
+  - id: i2s_out
+    i2s_lrclk_pin: GPIO7
+    i2s_bclk_pin: GPIO8
+
+# DODAJ TO: Pozwala sterować głośnikiem jak odtwarzaczem i testować dźwięk
+# media_player:
+#   - platform: speaker
+#     name: "Odtwarzacz Testowy"
+#     id: test_player
+#     announcement_pipeline:
+#       speaker: board_speaker # Łączy się z id poniżej
+
+    
+# ---------------------------------
+# Test glosnika
+# ---------------------------------
+# Dodaj ten komponent (raz, na poziomie głównym)
+rtttl:
+  speaker: board_speaker
+  id: my_rtttl
+  gain: 0.8
+button:
+  # - platform: template
+  #   name: "Test Glosnika (Dźwięk)"
+  #   on_press:
+  #     - media_player.play_media:
+  #         id: test_player
+  #         # Ten URL to krótki dźwięk systemowy "ping"
+  #         media_content_id: https://www.gstatic.com/assistant/sounds/double_beep.wav
+
+  - platform: template
+    name: "Test RTTTL (Prawdziwy dźwięk)"
+    on_press:
+      - rtttl.play: "TwoBeeps:d=4,o=5,b=100:16e6,16e6"
+          
+  - platform: template
+    name: "Wymuś Nasłuch (Debug)"
+    on_press:
+      - voice_assistant.start:          
+
+# ---------------------------------------------------------
+# KONFIGURACJA AUDIO (I2S)
+# ---------------------------------------------------------
+
+
+microphone:
+  - platform: i2s_audio
+    id: board_microphone
+    # i2s_mode: secondary 
+    i2s_audio_id: i2s_in
+    i2s_din_pin: GPIO1
+    adc_type: external
+    pdm: false
+    channel: left # INMP441
+    bits_per_sample: 32bit
+    sample_rate: 16000  
+
+speaker:
+  - platform: i2s_audio
+    id: board_speaker
+    i2s_audio_id: i2s_out
+    i2s_dout_pin: GPIO18
+    dac_type: external
+    channel: mono
+    bits_per_sample: 16bit
+    buffer_duration: 500ms   # ← DODAJ TO
+    timeout: 500ms           # ← DODAJ TO
+
+# ---------------------------------------------------------
+# LOGIKA ASYSTENTA GŁOSOWEGO I WAKE WORD
+# ---------------------------------------------------------
+
+# Definicja Wake Word (Wykrywanie hasła)
+micro_wake_word:
+  id: wake_word_engine
+  models:
+    - model: /config/esphome/models/okay_nabu.json
+  on_wake_word_detected:
+    # Po wykryciu hasła:
+    - logger.log: "Wake Word detected! Starting Assistant..."
+    - globals.set:
+        id: va_state
+        value: '1' # Zmień oczy na ZIELONE (Listening)
+    - voice_assistant.start:
+
+# Główna konfiguracja Asystenta
+voice_assistant:
+  id: va
+  microphone: board_microphone
+  speaker: board_speaker
+  noise_suppression_level: 2.0
+  auto_gain: 31dBFS
+  volume_multiplier: 4.0
+  micro_wake_word: wake_word_engine 
+  use_wake_word: true
+  
+  on_listening: # Wywoływane natychmiast po wykryciu Wake Word
+    - logger.log: "🎤 Mikrofon aktywny - Czekam na mowę..."
+    - globals.set:
+        id: va_state
+        value: '1'
+    - component.update: my_display
+        
+  # Wykryto mowę, zaczyna przetwarzać
+  on_stt_end:
+    - logger.log: "✅ Koniec rozpoznawania mowy (STT)"
+    - globals.set:
+        id: va_state
+        value: '2' # Zmień oczy na ŻÓŁTE (Thinking)
+    - component.update: my_display 
+
+  # Asystent zaczyna mówić odpowiedź
+  on_tts_start:
+    - globals.set:
+        id: va_state
+        value: '3' # Zmień oczy na NIEBIESKIE + Usta (Speaking)
+    - component.update: my_display
+
+  # Koniec interakcji (sukces)
+  on_end:
+    - delay: 1s
+    - wait_until:
+        not:
+          speaker.is_playing:
+    - globals.set:
+        id: va_state
+        value: '0' # Wróć do mrugania (Idle)
+    - component.update: my_display
+    - micro_wake_word.start: # Wznów nasłuchiwanie hasła "Hey Jarvis"
+
+  # Błąd (np. brak sieci)
+  on_error:
+    - logger.log: "🎤 Mikrofon BLAD SPRAWDZ CO..."
+    - globals.set:
+        id: va_state
+        value: '0'
+    - component.update: my_display
+    - delay: 1s
+    - micro_wake_word.start:
+
+# ---------------------------------------------------------
+# WYŚWIETLACZ I GRAFIKA (TWARZ) (ILI9xxx - GC9A01A)
+# ---------------------------------------------------------
+spi:
+  clk_pin: GPIO12
+  mosi_pin: GPIO11
+  interface: hardware
+
+output:
+  - platform: ledc
+    pin: GPIO14
+    id: backlight_pwm
+    frequency: 1000Hz
+
+light:
+  - platform: monochromatic
+    output: backlight_pwm
+    name: "Display Backlight"
+    id: display_backlight
+    restore_mode: ALWAYS_ON
+
+font:
+  - file: "Roboto-Bold.ttf"
+    id: font_main
+    size: 20
+
+display:
+  - platform: ili9xxx
+    model: GC9A01A
+    id: my_display
+    cs_pin: GPIO10
+    dc_pin: GPIO9
+    reset_pin: GPIO13
+    invert_colors: true 
+    rotation: 0
+    setup_priority: -100.0
+    # update_interval: never
+    update_interval: 2s 
+
+    
+    lambda: |-
+          // --- ZMIENNE ---
+          // Pobieramy stan (upewnij się, że va_state to global lub sensor zwracający int)
+          int state = id(va_state); 
+          long now = millis();
+          
+          // Parametry twarzy (240x240)
+          int cx = 120; // Środek X
+          int cy = 100; // Wysokość oczu
+          int eye_dist = 50; // Rozstaw oczu
+          int eye_r = 25; // Promień oka
+          
+          // Domyślny kolor biały
+          Color col = Color(255, 255, 255);
+          
+          // Czyszczenie ekranu - Color(0,0,0) zamiast Color::BLACK
+          it.fill(Color(0, 0, 0));
+
+          // --- MASZYNA STANÓW (ANIMACJE) ---
+
+          // STAN 1: LISTENING (Nasłuch) -> Zielone, szerokie oczy
+          if (state == 1) {
+            col = Color(0, 255, 0); // ZIELONY
+            eye_r = 35; // Powiększone
+            // Rysuj oczy
+            it.filled_circle(cx - eye_dist, cy, eye_r, col);
+            it.filled_circle(cx + eye_dist, cy, eye_r, col);
+            
+            it.print(cx, 180, id(font_main), col, TextAlign::CENTER, "Slucham...");
+          }
+          
+          // STAN 2: THINKING (Myślenie) -> Żółte, skaczące oczy
+          else if (state == 2) {
+            col = Color(255, 255, 0); // ŻÓŁTY
+            // Prosta animacja góra/dół
+            int offset = (int)(sin(now / 100.0) * 10);
+            
+            it.filled_circle(cx - eye_dist, cy + offset, eye_r, col);
+            it.filled_circle(cx + eye_dist, cy - offset, eye_r, col); // Przeciwfaza
+            
+            it.print(cx, 180, id(font_main), col, TextAlign::CENTER, "Mysle...");
+          }
+          
+          // STAN 3: SPEAKING (Mówienie) -> Niebieskie oczy + USTA
+          else if (state == 3) {
+            col = Color(50, 150, 255); // NIEBIESKI
+            
+            // Oczy
+            it.filled_circle(cx - eye_dist, cy, eye_r, col);
+            it.filled_circle(cx + eye_dist, cy, eye_r, col);
+            // Źrenice - Color(0,0,0) zamiast Color::BLACK
+            it.filled_circle(cx - eye_dist, cy, 10, Color(0, 0, 0));
+            it.filled_circle(cx + eye_dist, cy, 10, Color(0, 0, 0));
+
+            // Animacja ust (prostokąt zmieniający wysokość)
+            int mouth_h = 5 + abs((int)(sin(now / 80.0) * 20));
+            it.filled_rectangle(cx - 30, 160 - (mouth_h/2), 60, mouth_h, Color(255, 255, 255));
+          }
+          
+          // STAN 0: IDLE (Czuwanie) -> Mruganie co 4 sekundy
+          else {
+            col = Color(255, 255, 255); // BIAŁY zamiast Color::WHITE
+            bool blink = (now % 4000 < 150); // Mrugnij przez 150ms
+            
+            if (blink) {
+              // Zamknięte powieki
+              it.line(cx - eye_dist - 20, cy, cx - eye_dist + 20, cy, col);
+              it.line(cx + eye_dist - 20, cy, cx + eye_dist + 20, cy, col);
+            } else {
+              // Otwarte oczy
+              it.filled_circle(cx - eye_dist, cy, eye_r, col);
+              it.filled_circle(cx + eye_dist, cy, eye_r, col);
+              // Źrenice - Color(0,0,0) zamiast Color::BLACK
+              it.filled_circle(cx - eye_dist, cy + 5, 8, Color(0, 0, 0));
+              it.filled_circle(cx + eye_dist, cy + 5, 8, Color(0, 0, 0));
+            }
+          }
     type: esp-idf
 
 # Logi (ważne, wyłączamy na UART0, by nie śmiecić, zostawiamy USB)
