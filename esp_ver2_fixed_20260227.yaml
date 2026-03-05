@@ -4,6 +4,9 @@
 esphome:
   name: voice-assistant
   friendly_name: voice-assistant
+  platformio_options:
+    build_flags: "-DBOARD_HAS_PSRAM"
+    board_build.arduino.memory_type: qio_opi
 
 esp32:
   board: esp32-s3-devkitc-1
@@ -16,9 +19,7 @@ esp32:
       CONFIG_ESP32S3_DATA_CACHE_64KB: y
       CONFIG_ESP32S3_DATA_CACHE_LINE_64B: y
       CONFIG_AUDIO_BOARD_CUSTOM: y
-  platformio_options:
-    build_flags: "-DBOARD_HAS_PSRAM"
-    board_build.arduino.memory_type: qio_opi
+
 
 # PSRAM - obowiązkowe dla Wake Word!
 psram:
