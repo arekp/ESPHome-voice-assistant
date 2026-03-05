@@ -4,9 +4,7 @@
 esphome:
   name: voice-assistant
   friendly_name: voice-assistant
-  platformio_options:
-    build_flags: "-DBOARD_HAS_PSRAM"
-    board_build.arduino.memory_type: qio_opi
+
 
 esp32:
   board: esp32-s3-devkitc-1
@@ -212,7 +210,7 @@ display:
     reset_pin: GPIO13
     invert_colors: true
     rotation: 0
-    update_interval: 100ms
+    # update_interval: 1s
 
     lambda: |-
       int state = id(va_state);
