@@ -61,6 +61,17 @@ Zmień piny magistrali wejściowej (mikrofonu): Piny 36 i 37 na S3 z 8MB PSRAM p
 | **SCK** | GPIO2  | Zegar |
 | **SD** | GPIO1  | Dane wyjściowe |
 
+### 1_v5. Mikrofon (INMP441) _V3 dla plytki ver MON16R8 - do opracowania 
+
+| Pin INMP441 | Pin ESP32-S3 | Uwagi |
+| :--- | :--- | :--- |
+| **VDD** | **3.3V** | ⚠️ Podłączenie pod 5V uszkodzi mikrofon! |
+| **GND** | GND | |
+| **L/R** | GND | Wybór kanału Lewego |
+| **WS** | GPIO4  | Word Select |
+| **SCK** | GPIO5  | Zegar |
+| **SD** | GPIO6 | Dane wyjściowe |
+
 ----
 ### 2. Głośnik (MAX98357A)
 | Pin MAX98357A | Pin ESP32-S3 | Uwagi |
