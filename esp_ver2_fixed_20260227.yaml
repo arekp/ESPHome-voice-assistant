@@ -98,6 +98,10 @@ speaker:
 # ============================================
 # TEST BUTTONS (opcjonalnie)
 # ============================================
+rtttl:
+  speaker: board_speaker
+  id: my_rtttl
+  gain: 0.8
 button:
   - platform: template
     name: "Test RTTTL (Dźwięk)"
