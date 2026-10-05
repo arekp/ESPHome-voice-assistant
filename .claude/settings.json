@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(esphome config:*)",
+      "Bash(esphome compile:*)",
+      "Bash(esphome upload:*)",
+      "Bash(esphome logs:*)",
+      "Bash(timeout * esphome logs:*)",
+      "Bash(scripts/deploy.sh:*)"
+    ]
+  }
+}
