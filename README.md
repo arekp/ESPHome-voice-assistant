@@ -163,7 +163,8 @@ scripts/deploy.sh voice-assistant.local   # potem przez WiFi
 
 - **Lokalne Wykrywanie Słowa Budzącego**: "Okay Nabu" przy użyciu Micro Wake Word (aktywne, gdy HA jest połączony)
 - **Animowana twarz** na okrągłym wyświetlaczu, pokazująca stan asystenta
-- **Przyciski testowe**: Test RTTTL (dźwięk), Wymuś Nasłuch, Restart
+- **Wygaszacz „Matrix”**: po 3 min bezczynności zielony deszcz znaków zamiast oczu; czas ustawiasz w HA (encja „Wygaszacz Matrix po”, 0 = wyłączony), przycisk „Test wygaszacza Matrix”
+- **Przyciski testowe**: Test RTTTL (dźwięk), Test wygaszacza Matrix, Wymuś Nasłuch, Restart
 - **OTA Updates**: Aktualizacje oprogramowania przez sieć
 - **Redukcja Szumów i auto-gain** mikrofonu
 

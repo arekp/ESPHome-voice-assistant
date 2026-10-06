@@ -19,8 +19,18 @@ for VENV_BIN in .venv/Scripts .venv/bin; do
 done
 # Polskie znaki w logach na konsoli Windows (cp1250)
 export PYTHONUTF8=1 PYTHONIOENCODING=utf-8
-# ESP-IDF (idf_tools.py) odmawia pracy, gdy widzi MSYSTEM z Git Bash/MSYS
-unset MSYSTEM
+# Bez buforowania - `timeout` ubija esphome logs i bufor przepadałby razem z logami
+export PYTHONUNBUFFERED=1
+# ESP-IDF (idf_tools.py) odmawia pracy, gdy widzi MSYSTEM z Git Bash/MSYS.
+# Samo `unset` nie wystarcza - runtime MSYS dokleja MSYSTEM każdemu programowi
+# Windows - więc esphome startuje przez Pythona, który usuwa zmienną.
+if [[ -n "${MSYSTEM:-}" ]]; then
+  esphome() {
+    python -c 'import os, subprocess, sys
+os.environ.pop("MSYSTEM", None)
+sys.exit(subprocess.call(["esphome", *sys.argv[1:]]))' "$@"
+  }
+fi
 # Windows: domyślny katalog narzędzi ESP-IDF przekracza limit 260 znaków ścieżki
 if [[ -d .venv/Scripts ]]; then
   export ESPHOME_ESP_IDF_PREFIX="${ESPHOME_ESP_IDF_PREFIX:-C:\\ESPHome\\idf}"

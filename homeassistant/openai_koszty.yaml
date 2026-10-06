@@ -1,0 +1,99 @@
+# Pakiet Home Assistant: koszty i zużycie tokenów OpenAI (agent rozmowy asystenta).
+#
+# Instalacja:
+#   1. Skopiuj ten plik do /config/packages/openai_koszty.yaml
+#   2. W /config/configuration.yaml (jeśli jeszcze nie ma):
+#        homeassistant:
+#          packages: !include_dir_named packages
+#   3. W /config/secrets.yaml dodaj klucz Admin API (platform.openai.com → Settings →
+#      Organization → Admin keys, uprawnienia "Read only"):
+#        openai_admin_bearer: "Bearer sk-admin-..."
+#   4. Narzędzia deweloperskie → Sprawdź konfigurację → Uruchom ponownie.
+#
+# Dane OpenAI są w dobach UTC i aktualizują się z kilkuminutowym opóźnieniem.
+# Odpytywanie co godzinę; dwa zapytania na godzinę nic nie kosztują.
+
+rest:
+  # --- Koszty (USD) od początku miesiąca ---
+  - resource_template: >-
+      https://api.openai.com/v1/organization/costs?bucket_width=1d&limit=31&start_time={{
+      as_timestamp(now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)) | int }}
+    headers:
+      Authorization: !secret openai_admin_bearer
+    scan_interval: 3600
+    timeout: 30
+    sensor:
+      - name: "OpenAI koszt w tym miesiącu"
+        unique_id: openai_koszt_miesiac
+        icon: mdi:currency-usd
+        device_class: monetary
+        unit_of_measurement: "USD"
+        value_template: >-
+          {% set ns = namespace(t=0) %}
+          {% for b in value_json.data %}{% for r in b.results %}
+          {% set ns.t = ns.t + (r.amount.value | float(0)) %}
+          {% endfor %}{% endfor %}
+          {{ ns.t | round(4) }}
+      - name: "OpenAI koszt dzisiaj"
+        unique_id: openai_koszt_dzisiaj
+        icon: mdi:currency-usd
+        device_class: monetary
+        unit_of_measurement: "USD"
+        value_template: >-
+          {% set ns = namespace(t=0) %}
+          {% set b = value_json.data | last if value_json.data else none %}
+          {% if b %}{% for r in b.results %}
+          {% set ns.t = ns.t + (r.amount.value | float(0)) %}
+          {% endfor %}{% endif %}
+          {{ ns.t | round(4) }}
+
+  # --- Tokeny modeli językowych od początku miesiąca ---
+  - resource_template: >-
+      https://api.openai.com/v1/organization/usage/completions?bucket_width=1d&limit=31&start_time={{
+      as_timestamp(now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)) | int }}
+    headers:
+      Authorization: !secret openai_admin_bearer
+    scan_interval: 3600
+    timeout: 30
+    sensor:
+      - name: "OpenAI tokeny wejściowe w tym miesiącu"
+        unique_id: openai_tokeny_wejsciowe_miesiac
+        icon: mdi:import
+        unit_of_measurement: "tokenów"
+        value_template: >-
+          {% set ns = namespace(t=0) %}
+          {% for b in value_json.data %}{% for r in b.results %}
+          {% set ns.t = ns.t + (r.input_tokens | int(0)) %}
+          {% endfor %}{% endfor %}
+          {{ ns.t }}
+      - name: "OpenAI tokeny wyjściowe w tym miesiącu"
+        unique_id: openai_tokeny_wyjsciowe_miesiac
+        icon: mdi:export
+        unit_of_measurement: "tokenów"
+        value_template: >-
+          {% set ns = namespace(t=0) %}
+          {% for b in value_json.data %}{% for r in b.results %}
+          {% set ns.t = ns.t + (r.output_tokens | int(0)) %}
+          {% endfor %}{% endfor %}
+          {{ ns.t }}
+      - name: "OpenAI zapytania w tym miesiącu"
+        unique_id: openai_zapytania_miesiac
+        icon: mdi:message-processing
+        unit_of_measurement: "zapytań"
+        value_template: >-
+          {% set ns = namespace(t=0) %}
+          {% for b in value_json.data %}{% for r in b.results %}
+          {% set ns.t = ns.t + (r.num_model_requests | int(0)) %}
+          {% endfor %}{% endfor %}
+          {{ ns.t }}
+      - name: "OpenAI tokeny dzisiaj"
+        unique_id: openai_tokeny_dzisiaj
+        icon: mdi:counter
+        unit_of_measurement: "tokenów"
+        value_template: >-
+          {% set ns = namespace(t=0) %}
+          {% set b = value_json.data | last if value_json.data else none %}
+          {% if b %}{% for r in b.results %}
+          {% set ns.t = ns.t + (r.input_tokens | int(0)) + (r.output_tokens | int(0)) %}
+          {% endfor %}{% endif %}
+          {{ ns.t }}

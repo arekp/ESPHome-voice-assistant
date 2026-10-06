@@ -101,8 +101,10 @@ $env:PYTHONUTF8 = '1'                       # polskie znaki w konsoli Windows
 
 - Pierwsza kompilacja pobiera ESP-IDF i toolchain (~15–25 min), kolejne trwają kilka minut.
 - `esphome logs` nie kończy się sam – w skryptach używaj `timeout 60 esphome logs ...`.
-- W Git Bash kompilacja wymaga `unset MSYSTEM` (inaczej ESP-IDF: „MSys/Mingw is not supported”).
-  `deploy.sh` robi to sam; najprościej kompilować z PowerShell.
+- W Git Bash ESP-IDF odmawia pracy („MSys/Mingw is not supported”), bo widzi zmienną `MSYSTEM`.
+  Samo `unset MSYSTEM` nie pomaga – runtime MSYS dokleja ją każdemu programowi Windows.
+  `deploy.sh` uruchamia więc esphome przez Pythona, który usuwa zmienną; ręcznie najprościej z PowerShell.
+- `deploy.sh` ustawia `PYTHONUNBUFFERED=1` – bez tego `timeout` ucina `esphome logs` razem z niezapisanym buforem.
 - Logger działa na `UART0`, więc logi widać na COM4 (gniazdo „UART”) i przez WiFi.
 - Nie da się jednocześnie wgrywać i czytać logów przez ten sam port COM.
 
@@ -133,7 +135,8 @@ W logach urządzenia szukaj `[E]` i `[W]`. Przebieg poprawnej rozmowy:
 | Brak reakcji mikrofonu | w YAML piny 1/2/3, mikrofon podpięty do 4/5/6 | mikrofon na GPIO4/5/6 (README 1_v5) |
 | Brak logów na COM4 | logger na `USB_SERIAL_JTAG`, kabel w gnieździe „UART” | `logger: hardware_uart: UART0` |
 | Kompilacja: `WinError 206`, `c++config.h` | limit 260 znaków ścieżki w Windows | `ESPHOME_ESP_IDF_PREFIX=C:\ESPHome\idf` |
-| Kompilacja: „MSys/Mingw is not supported” | uruchomienie z Git Bash | `unset MSYSTEM` / PowerShell |
+| Kompilacja: „MSys/Mingw is not supported” | uruchomienie z Git Bash (MSYS dokleja `MSYSTEM`) | esphome przez Pythona usuwającego zmienną / PowerShell |
+| Puste logi w `deploy.sh` | `timeout` ubijał esphome przed zapisem bufora | `PYTHONUNBUFFERED=1` |
 | Lokalnie starsze ESPHome niż w HA | ESPHome 2026.9 wymaga Pythona ≥ 3.12 | `.venv` na Pythonie 3.13 |
 | Słowo budzące „nie działa”, brak odpowiedzi | pipeline Assist „alfred” wskazywał nieistniejącego agenta `conversation.chatgpt` (HA zwracał błąd w ~20 ms, oczy mrugały na zielono niezauważalnie) | agent `conversation.openai_conversation` + „preferuj lokalne komendy” |
 | Odpowiedź z innego głośnika (Atom Echo) | agent LLM użył narzędzia do wysłania komunikatu na inne urządzenie | to zachowanie LLM, nie firmware; Atom Echo odłączony |

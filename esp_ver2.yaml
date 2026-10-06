@@ -64,6 +64,32 @@ globals:
     restore_value: no
     initial_value: '0'
 
+  # Wygaszacz "Matrix": ostatnia aktywność asystenta (millis) i wymuszenie z przycisku
+  - id: last_active_ms
+    type: uint32_t
+    restore_value: no
+    initial_value: '0'
+  - id: matrix_force
+    type: bool
+    restore_value: no
+    initial_value: 'false'
+
+# Po ilu sekundach bezczynności włączyć wygaszacz (0 = nigdy) - ustawiane z HA
+number:
+  - platform: template
+    name: "Wygaszacz Matrix po"
+    id: matrix_timeout
+    icon: mdi:matrix
+    entity_category: config
+    unit_of_measurement: s
+    mode: box
+    min_value: 0
+    max_value: 3600
+    step: 30
+    initial_value: 180
+    optimistic: true
+    restore_value: true
+
 # ---------------------------------------------------------
 # KONFIGURACJA AUDIO (I2S)
 # ---------------------------------------------------------
@@ -118,6 +144,13 @@ button:
     name: "Wymuś Nasłuch (Debug)"
     on_press:
       - voice_assistant.start:
+
+  - platform: template
+    name: "Test wygaszacza Matrix"
+    on_press:
+      - globals.set:
+          id: matrix_force
+          value: 'true'
 
   - platform: restart
     name: "Restart"
@@ -246,6 +279,14 @@ font:
     size: 20
     glyphs: " .!?:0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzĄĆĘŁŃÓŚŹŻąćęłńóśźż"
 
+  # Wygaszacz "Matrix" - znaki muszą zgadzać się z MATRIX_SYM w lambdzie wyświetlacza
+  - file:
+      type: gfonts
+      family: Share Tech Mono
+    id: font_matrix
+    size: 14
+    glyphs: "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789$#*+<>=&%@"
+
 display:
   - platform: ili9xxx
     model: GC9A01A
@@ -273,6 +314,61 @@ display:
           Color col = Color(255, 255, 255);
 
           it.fill(Color(0, 0, 0));
+
+          // --- WYGASZACZ "MATRIX" po bezczynności ---
+          // Każdy stan inny niż Idle liczy się jako aktywność i wyłącza wygaszacz.
+          if (state != 0) {
+            id(last_active_ms) = now;
+            id(matrix_force) = false;
+          }
+          uint32_t idle_ms = (uint32_t) id(matrix_timeout).state * 1000;
+          bool matrix = state == 0 && (id(matrix_force) ||
+              (idle_ms > 0 && (uint32_t) now - id(last_active_ms) > idle_ms));
+
+          if (matrix) {
+            static const char *MATRIX_SYM = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789$#*+<>=&%@";
+            const int CW = 12, CH = 14;           // komórka znaku (px)
+            const int COLS = 20, ROWS = 18;       // 240/12 kolumn, 240/14 (+1) wierszy
+            static char cells[COLS][ROWS];
+            static float head[COLS], speed[COLS];
+            static int trail[COLS];
+            static bool ready = false;
+            int nsym = strlen(MATRIX_SYM);
+
+            auto reset_column = [&](int c, bool anywhere) {
+              head[c] = anywhere ? (float) (random_uint32() % (ROWS + 10)) - 10
+                                 : -(float) (random_uint32() % 12);
+              speed[c] = 0.5f + (random_uint32() % 70) / 100.0f;   // 0.5-1.2 wiersza/klatkę
+              trail[c] = 6 + random_uint32() % 10;                   // 6-15 znaków
+            };
+            if (!ready) {
+              for (int c = 0; c < COLS; c++) {
+                for (int r = 0; r < ROWS; r++) cells[c][r] = MATRIX_SYM[random_uint32() % nsym];
+                reset_column(c, true);
+              }
+              ready = true;
+            }
+            // Kilka znaków co klatkę zmienia się losowo, jak w filmie
+            for (int i = 0; i < 12; i++)
+              cells[random_uint32() % COLS][random_uint32() % ROWS] = MATRIX_SYM[random_uint32() % nsym];
+
+            char buf[2] = {0, 0};
+            for (int c = 0; c < COLS; c++) {
+              int h = (int) head[c];
+              for (int k = 0; k <= trail[c]; k++) {
+                int r = h - k;
+                if (r < 0 || r >= ROWS) continue;
+                // Głowa jasnozielona, ogon coraz ciemniejszy
+                Color cc = k == 0 ? Color(190, 255, 190)
+                                  : Color(0, 255 - (k * 200) / trail[c], 40 - (k * 40) / trail[c]);
+                buf[0] = cells[c][r];
+                it.print(c * CW + CW / 2, r * CH, id(font_matrix), cc, TextAlign::TOP_CENTER, buf);
+              }
+              head[c] += speed[c];
+              if (h - trail[c] > ROWS) reset_column(c, false);
+            }
+            return;
+          }
 
           // --- MASZYNA STANÓW (ANIMACJE) ---
 

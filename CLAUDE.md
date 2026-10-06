@@ -15,8 +15,8 @@ Działa tylko w sesji uruchomionej na komputerze z podłączoną płytką
 
 - ESPHome jest zainstalowany w `.venv` (Python 3.13, ESPHome 2026.9.1 – ta sama wersja co w HA) – używaj `.venv/Scripts/esphome.exe`
   (`scripts/deploy.sh` dodaje `.venv` do PATH sam). Na Windows ustaw `PYTHONUTF8=1`.
-- Kompilacja z Git Bash wymaga `unset MSYSTEM` (inaczej ESP-IDF: „MSys/Mingw is not supported”),
-  najprościej kompilować z PowerShell. Długie ścieżki w Windows są wyłączone – nie budować
+- Kompilacja z Git Bash: ESP-IDF odrzuca środowisko z `MSYSTEM` (MSYS dokleja ją nawet po `unset`),
+  `deploy.sh` to obchodzi; ręcznie kompiluj z PowerShell. Długie ścieżki w Windows są wyłączone – nie budować
   w głęboko zagnieżdżonych katalogach (np. %TEMP%), tylko w katalogu projektu.
   Narzędzia ESP-IDF leżą w `C:\ESPHome\idf` (zmienna użytkownika `ESPHOME_ESP_IDF_PREFIX`).
 - Na komputerze z Windows płytka widoczna jest jako `COM4` (CH343, gniazdo „UART”).
