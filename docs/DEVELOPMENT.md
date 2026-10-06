@@ -137,6 +137,10 @@ W logach urządzenia szukaj `[E]` i `[W]`. Przebieg poprawnej rozmowy:
 | Kompilacja: `WinError 206`, `c++config.h` | limit 260 znaków ścieżki w Windows | `ESPHOME_ESP_IDF_PREFIX=C:\ESPHome\idf` |
 | Kompilacja: „MSys/Mingw is not supported” | uruchomienie z Git Bash (MSYS dokleja `MSYSTEM`) | esphome przez Pythona usuwającego zmienną / PowerShell |
 | Puste logi w `deploy.sh` | `timeout` ubijał esphome przed zapisem bufora | `PYTHONUNBUFFERED=1` |
+| Czarny ekran, oczy widoczne tylko w ruchu | `auto_clear_enabled` (domyślnie włączone) czyści bufor przed lambdą, a lambda pomija rysowanie bez zmian | `auto_clear_enabled: false` – lambda sama wymazuje zmienione fragmenty |
+| Zrywająca się mowa, `Cannot receive audio, buffer is full` | animacja 20 kl./s blokowała pętlę główną; zmiana ust przerysowywała też oczy (duży prostokąt SPI) | oczy i usta przerysowywane osobno, 10 kl./s przy słuchaniu/mówieniu, `buffer_duration: 1000ms` |
+| Asystent bez końca w trybie słuchania | HA wznawia rozmowę, gdy odpowiedź LLM kończy się pytaniem | skrypt `listen_timeout`: 8 s bez mowy → `voice_assistant.stop` |
+| OTA: `connecting ... timed out` przy działającym API | zawieszona poprzednia sesja OTA | `scripts/button.py Restart` i ponowne wgranie |
 | Lokalnie starsze ESPHome niż w HA | ESPHome 2026.9 wymaga Pythona ≥ 3.12 | `.venv` na Pythonie 3.13 |
 | Słowo budzące „nie działa”, brak odpowiedzi | pipeline Assist „alfred” wskazywał nieistniejącego agenta `conversation.chatgpt` (HA zwracał błąd w ~20 ms, oczy mrugały na zielono niezauważalnie) | agent `conversation.openai_conversation` + „preferuj lokalne komendy” |
 | Odpowiedź z innego głośnika (Atom Echo) | agent LLM użył narzędzia do wysłania komunikatu na inne urządzenie | to zachowanie LLM, nie firmware; Atom Echo odłączony |

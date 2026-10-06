@@ -162,7 +162,8 @@ scripts/deploy.sh voice-assistant.local   # potem przez WiFi
 ## Funkcje
 
 - **Lokalne Wykrywanie Słowa Budzącego**: "Okay Nabu" przy użyciu Micro Wake Word (aktywne, gdy HA jest połączony)
-- **Animowana twarz** na okrągłym wyświetlaczu, pokazująca stan asystenta
+- **Animowana twarz robota** (oczy-pastylki w stylu EMO/Cozmo): naturalne mruganie, rozglądanie się, płynne zmiany kształtu; pod oczami wskaźnik stanu – słupki przy słuchaniu, skaczące kropki przy myśleniu, usta przy mówieniu. Rysowane są tylko zmienione fragmenty ekranu, więc animacja nie obciąża ESP
+- **Limit nasłuchu**: bez mowy przez 8 s asystent wraca do czuwania (także po pytaniu zwrotnym asystenta)
 - **Wygaszacz „Matrix”**: po 3 min bezczynności zielony deszcz znaków zamiast oczu; czas ustawiasz w HA (encja „Wygaszacz Matrix po”, 0 = wyłączony), przycisk „Test wygaszacza Matrix”
 - **Przyciski testowe**: Test RTTTL (dźwięk), Test wygaszacza Matrix, Wymuś Nasłuch, Restart
 - **OTA Updates**: Aktualizacje oprogramowania przez sieć
@@ -171,10 +172,10 @@ scripts/deploy.sh voice-assistant.local   # potem przez WiFi
 ## Użycie
 
 1. Powiedz "Okay Nabu" aby aktywować
-2. Oczy robią się **zielone** – mów polecenie
-3. **Żółte** podskakujące oczy – asystent myśli
+2. Oczy robią się **zielone**, pod nimi pulsują słupki – mów polecenie
+3. **Żółte**, zmrużone oczy i skaczące kropki – asystent myśli
 4. **Niebieskie** oczy z ustami – asystent odpowiada z głośnika
-5. Powrót do białych, mrugających oczu
+5. Powrót do białych, mrugających i rozglądających się oczu
 
 ## Szczegóły Konfiguracji
 

@@ -74,6 +74,20 @@ globals:
     restore_value: no
     initial_value: 'false'
 
+# Bez mowy przez 8 s od otwarcia mikrofonu (np. po pytaniu zwrotnym asystenta,
+# gdy HA sam wznawia rozmowę) - przerwij nasłuch i wróć do czuwania
+script:
+  - id: listen_timeout
+    mode: restart
+    then:
+      - delay: 8s
+      - if:
+          condition:
+            lambda: 'return id(va_state) == 1;'
+          then:
+            - logger.log: "Brak mowy przez 8 s - koniec nasłuchu"
+            - voice_assistant.stop:
+
 # Po ilu sekundach bezczynności włączyć wygaszacz (0 = nigdy) - ustawiane z HA
 number:
   - platform: template
@@ -123,7 +137,7 @@ speaker:
     dac_type: external
     channel: mono
     bits_per_sample: 16bit
-    buffer_duration: 500ms
+    buffer_duration: 1000ms   # zapas na chwilowe opóźnienia pętli głównej
     timeout: 500ms
 
 # ---------------------------------
@@ -202,6 +216,11 @@ voice_assistant:
         id: va_state
         value: '1'
     - component.update: my_display
+    - script.execute: listen_timeout
+
+  # Zaczęto mówić - nie przerywaj nasłuchu
+  on_stt_vad_start:
+    - script.stop: listen_timeout
 
   # Wykryto mowę, zaczyna przetwarzać
   on_stt_end:
@@ -297,35 +316,44 @@ display:
     invert_colors: true
     rotation: 0
     setup_priority: -100.0
-    # Kompromis: płynna animacja bez dławienia audio / wake word
-    update_interval: 200ms
+    # Lambda rysuje tylko to, co się zmieniło (bez it.fill() co klatkę), więc gdy
+    # twarz stoi, przez SPI nie idzie nic - 50 ms daje płynne mruganie bez obciążenia.
+    update_interval: 50ms
+    # Nie czyść bufora przed lambdą - lambda sama wymazuje tylko zmienione fragmenty
+    auto_clear_enabled: false
 
     lambda: |-
-          // --- ZMIENNE ---
+          // ===== Twarz robota w stylu EMO/Cozmo: oczy-pastylki =====
+          // Stany: 0 = czuwanie, 1 = słucham, 2 = myślę, 3 = mówię
           int state = id(va_state);
-          long now = millis();
+          uint32_t now = millis();
 
-          // Parametry twarzy (240x240)
-          int cx = 120; // Środek X
-          int cy = 100; // Wysokość oczu
-          int eye_dist = 50; // Rozstaw oczu
-          int eye_r = 25; // Promień oka
-
-          Color col = Color(255, 255, 255);
-
-          it.fill(Color(0, 0, 0));
-
-          // --- WYGASZACZ "MATRIX" po bezczynności ---
-          // Każdy stan inny niż Idle liczy się jako aktywność i wyłącza wygaszacz.
+          // --- Aktywność i wygaszacz "Matrix" ---
+          // Każdy stan inny niż czuwanie liczy się jako aktywność i wyłącza wygaszacz.
           if (state != 0) {
             id(last_active_ms) = now;
             id(matrix_force) = false;
           }
           uint32_t idle_ms = (uint32_t) id(matrix_timeout).state * 1000;
           bool matrix = state == 0 && (id(matrix_force) ||
-              (idle_ms > 0 && (uint32_t) now - id(last_active_ms) > idle_ms));
+              (idle_ms > 0 && now - id(last_active_ms) > idle_ms));
+
+          // Zmiana trybu (twarz <-> Matrix) czyści cały ekran raz i wymusza pełne przerysowanie
+          static bool was_matrix = false;
+          static bool face_valid = false;
+          if (matrix != was_matrix) {
+            it.fill(Color(0, 0, 0));
+            was_matrix = matrix;
+            face_valid = false;
+          }
 
           if (matrix) {
+            // Krok deszczu co 150 ms - niezależnie od częstotliwości odświeżania
+            static uint32_t last_step = 0;
+            if (now - last_step < 150) return;   // brak zmian = brak transferu SPI
+            last_step = now;
+            it.fill(Color(0, 0, 0));
+
             static const char *MATRIX_SYM = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789$#*+<>=&%@";
             const int CW = 12, CH = 14;           // komórka znaku (px)
             const int COLS = 20, ROWS = 18;       // 240/12 kolumn, 240/14 (+1) wierszy
@@ -338,7 +366,7 @@ display:
             auto reset_column = [&](int c, bool anywhere) {
               head[c] = anywhere ? (float) (random_uint32() % (ROWS + 10)) - 10
                                  : -(float) (random_uint32() % 12);
-              speed[c] = 0.5f + (random_uint32() % 70) / 100.0f;   // 0.5-1.2 wiersza/klatkę
+              speed[c] = 0.5f + (random_uint32() % 70) / 100.0f;   // 0.5-1.2 wiersza/krok
               trail[c] = 6 + random_uint32() % 10;                   // 6-15 znaków
             };
             if (!ready) {
@@ -348,7 +376,7 @@ display:
               }
               ready = true;
             }
-            // Kilka znaków co klatkę zmienia się losowo, jak w filmie
+            // Kilka znaków co krok zmienia się losowo, jak w filmie
             for (int i = 0; i < 12; i++)
               cells[random_uint32() % COLS][random_uint32() % ROWS] = MATRIX_SYM[random_uint32() % nsym];
 
@@ -370,56 +398,167 @@ display:
             return;
           }
 
-          // --- MASZYNA STANÓW (ANIMACJE) ---
+          // Podczas słuchania i mówienia główna pętla przesyła dźwięk - rysuj co 100 ms
+          static uint32_t last_face = 0;
+          if ((state == 1 || state == 3) && face_valid && now - last_face < 100) return;
+          last_face = now;
 
-          // STAN 1: LISTENING (Nasłuch) -> Zielone, szerokie oczy
-          if (state == 1) {
-            col = Color(0, 255, 0); // ZIELONY
-            eye_r = 35; // Powiększone
-            it.filled_circle(cx - eye_dist, cy, eye_r, col);
-            it.filled_circle(cx + eye_dist, cy, eye_r, col);
-
-            it.print(cx, 180, id(font_main), col, TextAlign::CENTER, "Słucham...");
+          // --- Parametry docelowe dla stanu ---
+          const int CX = 120, EYE_Y = 100, EYE_DX = 50, MOUTH_Y = 172;
+          float tw = 56, th = 72;          // szerokość / wysokość oka
+          float tlid = 0;                  // skośna powieka (zmrużenie), px
+          Color col = Color(225, 240, 255);
+          switch (state) {
+            case 1: tw = 62; th = 86; col = Color(40, 235, 110); break;        // słucham: szeroko otwarte
+            case 2: tw = 58; th = 62; tlid = 18; col = Color(255, 205, 40); break; // myślę: zmrużone
+            case 3: tw = 56; th = 68; col = Color(70, 160, 255); break;        // mówię
           }
 
-          // STAN 2: THINKING (Myślenie) -> Żółte, skaczące oczy
-          else if (state == 2) {
-            col = Color(255, 255, 0); // ŻÓŁTY
-            int offset = (int)(sin(now / 100.0) * 10);
-
-            it.filled_circle(cx - eye_dist, cy + offset, eye_r, col);
-            it.filled_circle(cx + eye_dist, cy - offset, eye_r, col); // Przeciwfaza
-
-            it.print(cx, 180, id(font_main), col, TextAlign::CENTER, "Myślę...");
+          // --- Spojrzenie: szybkie, płynne skoki wzroku (sakady) ---
+          static float gx = 0, gy = 0, tgx = 0, tgy = 0;
+          static uint32_t next_gaze = 0;
+          if (state == 0) {
+            if (now >= next_gaze) {
+              bool center = random_uint32() % 3 == 0;
+              tgx = center ? 0 : (int) (random_uint32() % 29) - 14;
+              tgy = center ? 0 : (int) (random_uint32() % 17) - 8;
+              next_gaze = now + 1200 + random_uint32() % 3800;
+            }
+          } else if (state == 2) {
+            // Myślenie: wzrok w górę, przeskakuje między stronami
+            tgx = ((now / 900) % 2) ? 12 : -8;
+            tgy = -10;
+          } else {
+            tgx = 0; tgy = state == 1 ? -4 : 0;
+            next_gaze = now + 800;   // po powrocie do czuwania chwilę patrz prosto
           }
+          gx += (tgx - gx) * 0.45f;
+          gy += (tgy - gy) * 0.45f;
 
-          // STAN 3: SPEAKING (Mówienie) -> Niebieskie oczy + USTA
-          else if (state == 3) {
-            col = Color(50, 150, 255); // NIEBIESKI
+          // --- Płynna zmiana kształtu między stanami ---
+          static float w = 56, h = 72, lid = 0;
+          w += (tw - w) * 0.35f;
+          h += (th - h) * 0.35f;
+          lid += (tlid - lid) * 0.35f;
 
-            it.filled_circle(cx - eye_dist, cy, eye_r, col);
-            it.filled_circle(cx + eye_dist, cy, eye_r, col);
-            it.filled_circle(cx - eye_dist, cy, 10, Color(0, 0, 0));
-            it.filled_circle(cx + eye_dist, cy, 10, Color(0, 0, 0));
-
-            // Animacja ust (prostokąt zmieniający wysokość)
-            int mouth_h = 5 + abs((int)(sin(now / 80.0) * 20));
-            it.filled_rectangle(cx - 30, 160 - (mouth_h/2), 60, mouth_h, Color(255, 255, 255));
+          // --- Mruganie: 160 ms, losowo co 2-6 s, czasem podwójne ---
+          static uint32_t next_blink = 3000, blink_start = 0;
+          if (now >= next_blink) {
+            blink_start = now;
+            bool twice = random_uint32() % 6 == 0;
+            next_blink = now + (twice ? 320 : 2000 + random_uint32() % 4000);
+            if (state == 1) next_blink += 3000;   // słuchając mruga rzadziej
           }
+          float open = 1.0f;
+          uint32_t bt = now - blink_start;
+          if (bt < 160) open = fabsf(1.0f - 2.0f * bt / 160.0f);
 
-          // STAN 0: IDLE (Czuwanie) -> Mruganie co 4 sekundy
-          else {
-            col = Color(255, 255, 255);
-            // Okno 300ms, żeby mrugnięcie trafiło w odświeżanie co 200ms
-            bool blink = (now % 4000 < 300);
+          // --- Usta: tylko przy mówieniu, nieregularny rytm sylab ---
+          static float mh = 0;
+          static float mt = 0;
+          static uint32_t next_syl = 0;
+          if (state == 3) {
+            if (now >= next_syl) {
+              mt = random_uint32() % 4 == 0 ? 3 : 6 + random_uint32() % 22;   // czasem pauza
+              next_syl = now + 80 + random_uint32() % 120;
+            }
+          } else {
+            mt = 0;
+          }
+          mh += (mt - mh) * 0.5f;
 
-            if (blink) {
-              it.line(cx - eye_dist - 20, cy, cx - eye_dist + 20, cy, col);
-              it.line(cx + eye_dist - 20, cy, cx + eye_dist + 20, cy, col);
-            } else {
-              it.filled_circle(cx - eye_dist, cy, eye_r, col);
-              it.filled_circle(cx + eye_dist, cy, eye_r, col);
-              it.filled_circle(cx - eye_dist, cy + 5, 8, Color(0, 0, 0));
-              it.filled_circle(cx + eye_dist, cy + 5, 8, Color(0, 0, 0));
+          // --- Wskaźnik stanu pod oczami ---
+          // słucham: 5 słupków "korektora", myślę: 3 kropki skaczące falą
+          int ind_t = state == 1 ? 1 : (state == 2 ? 2 : 0);
+          int iv[5] = {0, 0, 0, 0, 0};
+          static float bar[5] = {0, 0, 0, 0, 0}, bar_t[5] = {0, 0, 0, 0, 0};
+          static uint32_t next_bar = 0;
+          if (ind_t == 1) {
+            const float ENV[5] = {0.55f, 0.8f, 1.0f, 0.8f, 0.55f};   // środek najwyższy
+            if (now >= next_bar) {
+              for (int i = 0; i < 5; i++) bar_t[i] = ENV[i] * (6 + random_uint32() % 24);
+              next_bar = now + 90 + random_uint32() % 60;
+            }
+            for (int i = 0; i < 5; i++) {
+              bar[i] += (bar_t[i] - bar[i]) * 0.5f;
+              iv[i] = std::max(4, (int) (bar[i] + 0.5f));
+            }
+          } else if (ind_t == 2) {
+            for (int i = 0; i < 3; i++) {
+              float ph = (now % 1100) / 1100.0f * 6.2832f - i * 0.9f;
+              float s = sinf(ph);
+              iv[i] = s > 0 ? (int) (s * 10 + 0.5f) : 0;   // wysokość podskoku
             }
           }
+
+          // --- Klatka: wartości całkowite; identyczna z poprzednią = nic nie rysuj ---
+          // Lekka perspektywa: oko po stronie spojrzenia jest odrobinę większe.
+          int ew = (int) (w + 0.5f);
+          int base_h = (int) (h * open + 0.5f);
+          int lh = std::max(6, (int) (base_h * (1.0f - gx * 0.006f)));
+          int rh = std::max(6, (int) (base_h * (1.0f + gx * 0.006f)));
+          int ox = (int) lroundf(gx), oy = (int) lroundf(gy);
+          int il = (int) (lid + 0.5f);
+          int imh = (int) (mh + 0.5f);
+          if (imh < 3) imh = 0;
+          uint32_t icol = ((uint32_t) col.r << 16) | (col.g << 8) | col.b;
+
+          // Oczy i dolna część (usta/wskaźnik) porównywane osobno: zmiana ust nie
+          // przerysowuje oczu, więc przez SPI idzie tylko mały prostokąt.
+          struct Eyes { int ox, oy, ew, lh, rh, il; uint32_t col; };
+          struct Lower { int imh, ind_t, iv[5]; uint32_t col; };
+          static Eyes pe = {};
+          static Lower pl = {};
+          Eyes ce = {ox, oy, ew, lh, rh, il, icol};
+          Lower cl = {imh, ind_t, {iv[0], iv[1], iv[2], iv[3], iv[4]}, icol};
+          bool eyes_dirty = !face_valid || memcmp(&ce, &pe, sizeof(Eyes)) != 0;
+          bool lower_dirty = !face_valid || memcmp(&cl, &pl, sizeof(Lower)) != 0;
+          if (!eyes_dirty && !lower_dirty) return;   // nic się nie zmieniło = brak transferu
+
+          // Zaokrąglony prostokąt ("pastylka")
+          auto pill = [&](int cx, int cy, int pw, int ph, int rad, Color c) {
+            rad = std::min(rad, std::min(pw, ph) / 2);
+            int x = cx - pw / 2, y = cy - ph / 2;
+            it.filled_rectangle(x + rad, y, pw - 2 * rad, ph, c);
+            it.filled_rectangle(x, y + rad, pw, ph - 2 * rad, c);
+            it.filled_circle(x + rad, y + rad, rad, c);
+            it.filled_circle(x + pw - rad - 1, y + rad, rad, c);
+            it.filled_circle(x + rad, y + ph - rad - 1, rad, c);
+            it.filled_circle(x + pw - rad - 1, y + ph - rad - 1, rad, c);
+          };
+
+          if (eyes_dirty) {
+            if (face_valid) {
+              int pmax_h = std::max(pe.lh, pe.rh);
+              it.filled_rectangle(CX - EYE_DX - pe.ew / 2 + pe.ox - 2, EYE_Y + pe.oy - pmax_h / 2 - 2,
+                                  2 * EYE_DX + pe.ew + 4, pmax_h + 4, Color(0, 0, 0));
+            }
+            int lx = CX - EYE_DX + ox, rx = CX + EYE_DX + ox, ey = EYE_Y + oy;
+            pill(lx, ey, ew, lh, 18, col);
+            pill(rx, ey, ew, rh, 18, col);
+            // Zmrużenie: czarne trójkąty ścinają górę oczu skośnie ku środkowi twarzy
+            if (il > 0) {
+              int lt = ey - lh / 2 - 1, rt = ey - rh / 2 - 1;
+              it.filled_triangle(lx - ew / 2 - 1, lt, lx + ew / 2 + 1, lt, lx + ew / 2 + 1, lt + il, Color(0, 0, 0));
+              it.filled_triangle(rx - ew / 2 - 1, rt, rx + ew / 2 + 1, rt, rx - ew / 2 - 1, rt + il, Color(0, 0, 0));
+            }
+            pe = ce;
+          }
+
+          if (lower_dirty) {
+            // Jeden stały obszar na usta i wskaźniki (poniżej oczu, bez nakładania)
+            if (face_valid && (pl.imh > 0 || pl.ind_t > 0))
+              it.filled_rectangle(CX - 36, MOUTH_Y - 24, 72, 44, Color(0, 0, 0));
+            if (imh > 0) pill(CX, MOUTH_Y, 56, imh, 10, col);
+            if (ind_t == 1) {
+              // Słupki rosną symetrycznie od środkowej linii
+              for (int i = 0; i < 5; i++)
+                pill(CX - 28 + i * 14, MOUTH_Y, 8, iv[i], 4, col);
+            } else if (ind_t == 2) {
+              for (int i = 0; i < 3; i++)
+                it.filled_circle(CX - 20 + i * 20, MOUTH_Y + 6 - iv[i], 6, col);
+            }
+            pl = cl;
+          }
+
+          face_valid = true;

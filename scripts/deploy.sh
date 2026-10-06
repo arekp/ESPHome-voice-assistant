@@ -66,6 +66,8 @@ if [[ "$LOG_SECONDS" -gt 0 ]]; then
   mkdir -p logs
   LOG_FILE="logs/$(date +%Y%m%d-%H%M%S).log"
   echo "==> Zbieram logi przez ${LOG_SECONDS}s do $LOG_FILE"
+  # Po OTA płytka restartuje się kilka sekund - wcześniej logi bywały puste
+  sleep 12
   # esphome logs nie kończy się sam - ograniczamy czasem
   timeout "$LOG_SECONDS" esphome logs "$CONFIG" --device "$DEVICE" > "$LOG_FILE" 2>&1 || true
   ln -sf "$(basename "$LOG_FILE")" logs/latest.log
