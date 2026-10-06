@@ -17,6 +17,8 @@ Ten projekt dostarcza kompletną konfigurację ESPHome do budowy asystenta głos
 
 ### ✅ Aktualne okablowanie (zgodne z `esp_ver2.yaml`, przetestowane)
 
+![Schemat połączeń: ESP32-S3 DevKitC-1, INMP441, MAX98357A, GC9A01](docs/schemat-polaczen.svg)
+
 | Moduł | Sygnał → GPIO | Zasilanie |
 | :--- | :--- | :--- |
 | Mikrofon INMP441 (sekcja 1_v5) | WS→4, SCK→5, SD→6, L/R→GND | 3V3 |

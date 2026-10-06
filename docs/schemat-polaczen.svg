@@ -1,0 +1,243 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 930 840" width="930" height="840" role="img" aria-label="Schemat połączeń asystenta głosowego ESP32-S3">
+<style>
+/* Układ: arkusz montażowy – schemat na całą szerokość, pod nim tabela pin-do-pinu i uwagi warsztatowe */
+:root {
+  --bg: #eef2ee;
+  --paper: #fbfcfa;
+  --fg: #17211b;
+  --muted: #5a6a60;
+  --rule: #cdd7cf;
+  --board: #1d4a39;
+  --board-ink: #e4f1e9;
+  --can: #b9c3bd;
+  --pad: #c9a43a;
+  --w-v33: #cf3a2c;
+  --w-v5: #d98500;
+  --w-gnd: #2a302c;
+  --w-mic: #2563d6;
+  --w-amp: #8a43c8;
+  --w-disp: #0b8f7a;
+  --f-display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --f-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1411; --paper: #161d19; --fg: #e3ebe6; --muted: #92a399; --rule: #2b3830;
+    --board: #1a3e31; --board-ink: #d7eadf; --can: #5f6b64; --pad: #d9b44a;
+    --w-v33: #ff6a5c; --w-v5: #ffb03a; --w-gnd: #c3ccc6; --w-mic: #6c9dff; --w-amp: #bb8cf2; --w-disp: #39cdb3;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1411; --paper: #161d19; --fg: #e3ebe6; --muted: #92a399; --rule: #2b3830;
+  --board: #1a3e31; --board-ink: #d7eadf; --can: #5f6b64; --pad: #d9b44a;
+  --w-v33: #ff6a5c; --w-v5: #ffb03a; --w-gnd: #c3ccc6; --w-mic: #6c9dff; --w-amp: #bb8cf2; --w-disp: #39cdb3;
+  color-scheme: dark;
+}
+
+
+header { display: grid; gap: 6px; }
+.eyebrow { font-family: var(--f-mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+h1 { font-family: var(--f-display); font-weight: 800; font-size: clamp(28px, 4.4vw, 42px); line-height: 1.08; margin: 0; text-wrap: balance; }
+.lead { margin: 0; max-width: 64ch; color: var(--muted); }
+h2 { font-family: var(--f-display); font-weight: 700; font-size: 20px; margin: 0 0 12px; }
+
+.sheet { background: var(--paper); border: 1px solid var(--rule); border-radius: 14px; padding: 18px; display: grid; gap: 14px; }
+.legend { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 13px; }
+.legend span { display: inline-flex; align-items: center; gap: 8px; }
+.legend i { width: 26px; height: 4px; border-radius: 2px; display: inline-block; }
+.legend i.dash { background: repeating-linear-gradient(90deg, var(--w-v5) 0 6px, transparent 6px 10px); }
+.scroll { overflow-x: auto; }
+
+
+/* SVG */
+.w { fill: none; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.w.v33 { stroke: var(--w-v33); } .w.v5 { stroke: var(--w-v5); } .w.gnd { stroke: var(--w-gnd); }
+.w.mic { stroke: var(--w-mic); } .w.amp { stroke: var(--w-amp); } .w.disp { stroke: var(--w-disp); }
+.w.target { stroke-dasharray: 7 5; }
+.dot.v33 { fill: var(--w-v33); } .dot.gnd { fill: var(--w-gnd); }
+.pad { fill: var(--pad); stroke: var(--paper); stroke-width: 1.5; }
+.pad.unused { fill: none; stroke: var(--muted); stroke-width: 1.2; opacity: .55; }
+.board { fill: var(--board); }
+.can { fill: var(--can); }
+.cantext { fill: #1b211d; font-family: var(--f-mono); font-size: 13px; font-weight: 600; }
+.cantext.small { font-size: 9.5px; font-weight: 500; }
+.usb { fill: var(--can); stroke: var(--board); stroke-width: 2; }
+.usblabel { fill: var(--fg); font-family: var(--f-mono); font-size: 12px; font-weight: 600; }
+.usbsub { fill: var(--muted); font-family: var(--f-mono); font-size: 10px; }
+.boardtitle { fill: var(--board-ink); font-family: var(--f-display); font-size: 17px; font-weight: 700; }
+.boardsub { fill: var(--board-ink); opacity: .75; font-family: var(--f-mono); font-size: 10.5px; }
+.elabel { fill: var(--board-ink); font-family: var(--f-mono); font-size: 12px; font-weight: 500; }
+.elabel.unused { opacity: .45; }
+.jumper rect { fill: var(--pad); }
+.jlabel { fill: var(--w-v5); font-family: var(--f-mono); font-size: 11px; font-weight: 600; }
+.tnote { fill: var(--w-v5); font-family: var(--f-body); font-size: 12px; font-weight: 500; }
+.buslabel { font-family: var(--f-mono); font-size: 11px; font-weight: 600; }
+.gndt { fill: var(--w-gnd); } .v33t { fill: var(--w-v33); }
+.mbox { fill: var(--paper); stroke: var(--rule); stroke-width: 1.5; }
+.mod.mic .mstripe { fill: var(--w-mic); } .mod.amp .mstripe { fill: var(--w-amp); } .mod.disp .mstripe { fill: var(--w-disp); }
+.mtitle { fill: var(--fg); font-family: var(--f-display); font-size: 16px; font-weight: 800; }
+.msub { fill: var(--muted); font-family: var(--f-body); font-size: 12px; }
+.plabel { fill: var(--fg); font-family: var(--f-mono); font-size: 12px; font-weight: 600; }
+.pnote { fill: var(--muted); font-family: var(--f-mono); font-size: 10px; }
+.speaker rect, .speaker path { fill: none; stroke: var(--muted); stroke-width: 1.6; }
+
+</style>
+<rect x="0" y="0" width="930" height="840" rx="14" style="fill:var(--paper)"/>
+<rect class="board" x="642" y="60" width="218" height="700" rx="12"/>
+<rect class="can" x="720" y="78" width="110" height="150" rx="5"/>
+<text class="cantext" x="775" y="148" text-anchor="middle">ESP32-S3</text>
+<text class="cantext small" x="775" y="166" text-anchor="middle">WROOM-1 N16R8</text>
+<text class="cantext small" x="775" y="182" text-anchor="middle">16 MB flash · 8 MB PSRAM</text>
+<rect class="usb" x="700" y="754" width="56" height="22" rx="7"/>
+<text class="usblabel" x="728" y="794" text-anchor="middle">USB</text>
+<text class="usbsub" x="728" y="808" text-anchor="middle">natywne</text>
+<rect class="usb" x="792" y="754" width="56" height="22" rx="7"/>
+<text class="usblabel" x="820" y="794" text-anchor="middle">UART</text>
+<text class="usbsub" x="820" y="808" text-anchor="middle">CH343 · COM4</text>
+<text class="boardtitle" x="775" y="260" text-anchor="middle">DevKitC-1</text>
+<text class="boardsub" x="775" y="278" text-anchor="middle">lewe złącze (J1)</text>
+<g class="jumper"><rect x="756" y="691" width="12" height="18" rx="2"/><rect x="772" y="691" width="12" height="18" rx="2"/></g>
+<text class="jlabel" x="792" y="704">IN-OUT</text>
+<path class="w gnd" d="M310,130 L310,730"/>
+<path class="w v33" d="M340,100 L340,700"/>
+<path class="w v33" d="M270,100 L660,100"/>
+<circle class="dot v33" cx="340" cy="100" r="4.5"/>
+<path class="w gnd" d="M270,130 L310,130"/>
+<circle class="dot gnd" cx="310" cy="130" r="4.5"/>
+<path class="w gnd" d="M270,160 L310,160"/>
+<circle class="dot gnd" cx="310" cy="160" r="4.5"/>
+<path class="w mic" d="M270,190 L660,190"/>
+<path class="w mic" d="M270,220 L660,220"/>
+<path class="w mic" d="M270,250 L660,250"/>
+<path class="w amp" d="M270,310 L480,310 L480,280 L660,280"/>
+<path class="w amp" d="M270,336 L580,336 L580,400 L660,400"/>
+<path class="w amp" d="M270,362 L530,362 L530,430 L660,430"/>
+<path class="w gnd" d="M270,440 L310,440"/>
+<circle class="dot gnd" cx="310" cy="440" r="4.5"/>
+<path class="w v33" d="M270,466 L340,466"/>
+<circle class="dot v33" cx="340" cy="466" r="4.5"/>
+<path class="w disp" d="M270,520 L660,520"/>
+<path class="w disp" d="M270,550 L660,550"/>
+<path class="w disp" d="M270,580 L660,580"/>
+<path class="w disp" d="M270,610 L660,610"/>
+<path class="w disp" d="M270,640 L660,640"/>
+<path class="w disp" d="M270,670 L660,670"/>
+<path class="w v33" d="M270,700 L340,700"/>
+<circle class="dot v33" cx="340" cy="700" r="4.5"/>
+<path class="w gnd" d="M270,730 L660,730"/>
+<circle class="dot gnd" cx="310" cy="730" r="4.5"/>
+<path class="w v5 target" d="M660,700 L600,700"/>
+<text class="tnote" x="594" y="690" text-anchor="end">docelowo → VIN wzmacniacza</text>
+<text class="buslabel gndt" x="310" y="752" text-anchor="middle">GND</text>
+<text class="buslabel v33t" x="340" y="88" text-anchor="middle">3V3</text>
+<g class="mod mic">
+<rect class="mbox" x="40" y="78" width="230" height="190" rx="10"/>
+<rect class="mstripe" x="40" y="78" width="8" height="190" rx="4"/>
+<text class="mtitle" x="62" y="104">INMP441</text>
+<text class="msub" x="62" y="122">mikrofon I²S</text>
+<text class="plabel" x="256" y="104" text-anchor="end">VDD</text>
+<text class="plabel" x="256" y="134" text-anchor="end">GND</text>
+<text class="plabel" x="256" y="164" text-anchor="end">L/R</text>
+<text class="plabel" x="256" y="194" text-anchor="end">WS</text>
+<text class="plabel" x="256" y="224" text-anchor="end">SCK</text>
+<text class="plabel" x="256" y="254" text-anchor="end">SD</text>
+</g>
+<g class="mod amp">
+<rect class="mbox" x="40" y="288" width="230" height="196" rx="10"/>
+<rect class="mstripe" x="40" y="288" width="8" height="196" rx="4"/>
+<text class="mtitle" x="62" y="314">MAX98357A</text>
+<text class="msub" x="62" y="332">wzmacniacz I²S 3 W</text>
+<text class="plabel" x="256" y="314" text-anchor="end">LRC</text>
+<text class="plabel" x="256" y="340" text-anchor="end">DIN</text>
+<text class="plabel" x="256" y="366" text-anchor="end">BCLK</text>
+<text class="plabel" x="256" y="392" text-anchor="end">GAIN</text>
+<text class="pnote" x="214" y="392" text-anchor="end">n/c</text>
+<text class="plabel" x="256" y="418" text-anchor="end">SD</text>
+<text class="pnote" x="230" y="418" text-anchor="end">n/c</text>
+<text class="plabel" x="256" y="444" text-anchor="end">GND</text>
+<text class="plabel" x="256" y="470" text-anchor="end">VIN</text>
+</g>
+<g class="mod disp">
+<rect class="mbox" x="40" y="498" width="230" height="250" rx="10"/>
+<rect class="mstripe" x="40" y="498" width="8" height="250" rx="4"/>
+<text class="mtitle" x="62" y="524">GC9A01</text>
+<text class="msub" x="62" y="542">wyświetlacz 1.28″ SPI</text>
+<text class="plabel" x="256" y="524" text-anchor="end">DC</text>
+<text class="plabel" x="256" y="554" text-anchor="end">CS</text>
+<text class="plabel" x="256" y="584" text-anchor="end">SDA</text>
+<text class="plabel" x="256" y="614" text-anchor="end">SCL</text>
+<text class="plabel" x="256" y="644" text-anchor="end">RES</text>
+<text class="plabel" x="256" y="674" text-anchor="end">BLK</text>
+<text class="plabel" x="256" y="704" text-anchor="end">VCC</text>
+<text class="plabel" x="256" y="734" text-anchor="end">GND</text>
+</g>
+<g class="speaker"><rect x="150" y="374" width="16" height="28" rx="2"/><path d="M166,374 L188,358 L188,418 L166,402 Z"/></g>
+<text class="msub" x="62" y="392">głośnik 4 Ω</text>
+<circle class="pad" cx="270" cy="100" r="5.5"/>
+<circle class="pad" cx="270" cy="130" r="5.5"/>
+<circle class="pad" cx="270" cy="160" r="5.5"/>
+<circle class="pad" cx="270" cy="190" r="5.5"/>
+<circle class="pad" cx="270" cy="220" r="5.5"/>
+<circle class="pad" cx="270" cy="250" r="5.5"/>
+<circle class="pad" cx="270" cy="310" r="5.5"/>
+<circle class="pad" cx="270" cy="336" r="5.5"/>
+<circle class="pad" cx="270" cy="362" r="5.5"/>
+<circle class="pad unused" cx="270" cy="388" r="5.5"/>
+<circle class="pad unused" cx="270" cy="414" r="5.5"/>
+<circle class="pad" cx="270" cy="440" r="5.5"/>
+<circle class="pad" cx="270" cy="466" r="5.5"/>
+<circle class="pad" cx="270" cy="520" r="5.5"/>
+<circle class="pad" cx="270" cy="550" r="5.5"/>
+<circle class="pad" cx="270" cy="580" r="5.5"/>
+<circle class="pad" cx="270" cy="610" r="5.5"/>
+<circle class="pad" cx="270" cy="640" r="5.5"/>
+<circle class="pad" cx="270" cy="670" r="5.5"/>
+<circle class="pad" cx="270" cy="700" r="5.5"/>
+<circle class="pad" cx="270" cy="730" r="5.5"/>
+<circle class="pad" cx="660" cy="100" r="5.5"/>
+<text class="elabel" x="674" y="104">3V3</text>
+<circle class="pad unused" cx="660" cy="130" r="5.5"/>
+<text class="elabel unused" x="674" y="134">3V3</text>
+<circle class="pad unused" cx="660" cy="160" r="5.5"/>
+<text class="elabel unused" x="674" y="164">RST</text>
+<circle class="pad" cx="660" cy="190" r="5.5"/>
+<text class="elabel" x="674" y="194">GPIO4</text>
+<circle class="pad" cx="660" cy="220" r="5.5"/>
+<text class="elabel" x="674" y="224">GPIO5</text>
+<circle class="pad" cx="660" cy="250" r="5.5"/>
+<text class="elabel" x="674" y="254">GPIO6</text>
+<circle class="pad" cx="660" cy="280" r="5.5"/>
+<text class="elabel" x="674" y="284">GPIO7</text>
+<circle class="pad unused" cx="660" cy="310" r="5.5"/>
+<text class="elabel unused" x="674" y="314">GPIO15</text>
+<circle class="pad unused" cx="660" cy="340" r="5.5"/>
+<text class="elabel unused" x="674" y="344">GPIO16</text>
+<circle class="pad unused" cx="660" cy="370" r="5.5"/>
+<text class="elabel unused" x="674" y="374">GPIO17</text>
+<circle class="pad" cx="660" cy="400" r="5.5"/>
+<text class="elabel" x="674" y="404">GPIO18</text>
+<circle class="pad" cx="660" cy="430" r="5.5"/>
+<text class="elabel" x="674" y="434">GPIO8</text>
+<circle class="pad unused" cx="660" cy="460" r="5.5"/>
+<text class="elabel unused" x="674" y="464">GPIO3</text>
+<circle class="pad unused" cx="660" cy="490" r="5.5"/>
+<text class="elabel unused" x="674" y="494">GPIO46</text>
+<circle class="pad" cx="660" cy="520" r="5.5"/>
+<text class="elabel" x="674" y="524">GPIO9</text>
+<circle class="pad" cx="660" cy="550" r="5.5"/>
+<text class="elabel" x="674" y="554">GPIO10</text>
+<circle class="pad" cx="660" cy="580" r="5.5"/>
+<text class="elabel" x="674" y="584">GPIO11</text>
+<circle class="pad" cx="660" cy="610" r="5.5"/>
+<text class="elabel" x="674" y="614">GPIO12</text>
+<circle class="pad" cx="660" cy="640" r="5.5"/>
+<text class="elabel" x="674" y="644">GPIO13</text>
+<circle class="pad" cx="660" cy="670" r="5.5"/>
+<text class="elabel" x="674" y="674">GPIO14</text>
+<circle class="pad" cx="660" cy="700" r="5.5"/>
+<text class="elabel" x="674" y="704">5V</text>
+<circle class="pad" cx="660" cy="730" r="5.5"/>
+<text class="elabel" x="674" y="734">GND</text>
+</svg>
