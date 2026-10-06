@@ -15,6 +15,21 @@ Ten projekt dostarcza kompletną konfigurację ESPHome do budowy asystenta głos
 
 ## 🔌 Schemat Połączeń (Pinout)
 
+### ✅ Aktualne okablowanie (zgodne z `esp_ver2.yaml`, przetestowane)
+
+| Moduł | Sygnał → GPIO | Zasilanie |
+| :--- | :--- | :--- |
+| Mikrofon INMP441 (sekcja 1_v5) | WS→4, SCK→5, SD→6, L/R→GND | 3V3 |
+| Wzmacniacz MAX98357A (sekcja 2_1) | LRC→7, BCLK→8, DIN→18 | **3V3** (tymczasowo, patrz niżej) |
+| Wyświetlacz GC9A01 (sekcja 3) | DC→9, CS→10, SDA→11, SCL→12, RES→13, BLK→14 | 3V3 |
+
+⚠️ **Pin 5V na klonach ESP32-S3 N16R8 może nie mieć napięcia.** Obok pinu jest zworka
+lutownicza **IN-OUT** – dopóki nie jest zlutowana, pin 5V nie dostaje zasilania z USB i
+wzmacniacz milczy (firmware „gra”, ale nic nie słychać). Obecnie MAX98357A jest zasilany z 3V3
+(działa, ciszej). Docelowo: zlutować IN-OUT i przepiąć Vin na 5V.
+
+Pozostałe tabele poniżej to historia testowanych wariantów pinów.
+
 Poniższa tabela przedstawia bezpieczne połączenia dla **ESP32-S3 DevKitC-1**, które nie kolidują z pamięcią Flash/PSRAM oraz wbudowanymi funkcjami.
 
 ### 1. Mikrofon (INMP441)
@@ -112,7 +127,7 @@ Zmień piny magistrali wejściowej (mikrofonu): Piny 36 i 37 na S3 z 8MB PSRAM p
 Upewnij się, że w Twoim pliku `.yaml` sekcje `i2s_audio` i `display` korzystają z powyższych pinów.
 
 ### Dlaczego takie piny?
-1.  **Piny 45, 47, 48 (Audio):** Są to piny często używane w zestawach deweloperskich ESP32-S3 do audio, są bezpieczne i nie kolidują z systemem bootowania (w przeciwieństwie do np. GPIO 0 czy GPIO 46 w niektórych stanach).
+1.  **Piny 4-8 i 18 (Audio):** Nie kolidują z Octal PSRAM (GPIO 33-37) ani z pinami bootowania (GPIO 0, 3, 45, 46). Mikrofon i głośnik mają osobne magistrale I2S.
 2.  **Piny 9-14 (SPI):** Są zgrupowane fizycznie blisko siebie na DevKicie, co ułatwia prowadzenie przewodów, i nie kolidują z pamięcią Octal SPI Flash/PSRAM (która zajmuje piny 26-32).
 3.  **MAX98357A:** Ten układ automatycznie miksuje kanał lewy i prawy do mono, jeśli pin SD jest niepodłączony, co jest idealne dla prostego asystenta głosowego.
 
@@ -123,32 +138,40 @@ Zainstaluj wymagane dodatki Home Assistant:
 - **Piper** - Zamiana tekstu na mowę
 - **Voice Assist** - Potok głosowy
 
+W **Ustawienia → Asystenci głosowi** asystent używany przez urządzenie musi mieć istniejącego
+agenta konwersacji (np. `OpenAI Conversation` albo `Home Assistant`), STT (Whisper) i TTS (Piper).
+Nieistniejący agent powoduje natychmiastowy błąd `intent-not-supported` po słowie budzącym.
+
 ### 2. Konfiguracja ESPHome
 
-Skopiuj `esphome.yaml` do dashboardu ESPHome i skonfiguruj:
-- Dane WiFi (`!secret wifi_ssid`, `!secret wifi_password`)
-- Klucz szyfrowania API Home Assistant
+Główny plik to `esp_ver2.yaml`. Sekrety (WiFi, klucz API, hasło OTA) trzymamy w `.env`
+(wzór: `.env.example`), z którego `scripts/env2secrets.py` generuje `secrets.yaml`.
 
-### 🚀3. Flashowanie
+### 🚀3. Flashowanie i development
 
-Flashuj ESP32-S3 DevKitC-1 przy użyciu web flashera ESPHome lub CLI.
+Pełna instrukcja budowy środowiska, kompilacji, wgrywania (kablem i przez WiFi) oraz
+diagnostyki: **[docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)**. W skrócie:
+
+```bash
+scripts/deploy.sh COM4                    # pierwszy raz kablem
+scripts/deploy.sh voice-assistant.local   # potem przez WiFi
+```
 
 ## Funkcje
 
-- **Lokalne Wykrywanie Słowa Budzącego**: "hey_jarvis" przy użyciu Micro Wake Word
-- **Feedback LED**: Pasek LED RGB z efektem skanowania przy słowie budzącym
-- **Kontrola Wyciszenia**: Przycisk wyciszenia dla prywatności
+- **Lokalne Wykrywanie Słowa Budzącego**: "Okay Nabu" przy użyciu Micro Wake Word (aktywne, gdy HA jest połączony)
+- **Animowana twarz** na okrągłym wyświetlaczu, pokazująca stan asystenta
+- **Przyciski testowe**: Test RTTTL (dźwięk), Wymuś Nasłuch, Restart
 - **OTA Updates**: Aktualizacje oprogramowania przez sieć
-- **Redukcja Szumów**: Zaawansowana obróbka audio
-- **Kontrola Głośności**: Konfigurowalne wyjście audio
+- **Redukcja Szumów i auto-gain** mikrofonu
 
 ## Użycie
 
-1. Powiedz "hey_jarvis" aby aktywować
-2. Pasek LED zeskanuje i zmieni kolor na biały
-3. Mów polecenie po sygnale
-4. Asystent przetwarza i odpowiada
-5. LED wyłącza się po zakończeniu
+1. Powiedz "Okay Nabu" aby aktywować
+2. Oczy robią się **zielone** – mów polecenie
+3. **Żółte** podskakujące oczy – asystent myśli
+4. **Niebieskie** oczy z ustami – asystent odpowiada z głośnika
+5. Powrót do białych, mrugających oczu
 
 ## Szczegóły Konfiguracji
 
@@ -160,11 +183,6 @@ bits_per_sample: 32bit
  volume_multiplier: 4.0
 ```
 
-### Efekty LED
-- **Bezczynność**: Zielone pulsowanie
-- **Słowo Budzące**: Białe skanowanie
-- **Słuchanie**: Białe stałe
-- **Przetwarzanie**: Niebieskie szybkie pulsujące
 
 ## Integracja
 
@@ -177,16 +195,18 @@ Asystent integruje się z encjami Home Assistant dla:
 ## Rozwiązywanie Problemów
 
 ### Częste Problemy
-- **Brak wyjścia audio**: Sprawdź połączenie 5V MAX98357A
-- **Nie wykryto słowa budzącego**: Dostosuj wzmocnienie mikrofonu
-- **LED nie działa**: Sprawdź pin danych WS2812
+- **Brak wyjścia audio** (a w logach `rtttl: Playing song` / `i2s_audio.speaker: Starting`):
+  brak napięcia na pinie 5V – zlutuj zworkę IN-OUT albo zasil MAX98357A z 3V3.
+  Test: `scripts/button.py RTTTL` powinien dać dwa piknięcia.
+- **Oczy nie zmieniają się po "Okay Nabu"**: sprawdź logi – jeśli jest `intent-not-supported`,
+  asystent w HA ma ustawionego nieistniejącego agenta konwersacji.
+- **Słowo budzące w ogóle nie działa**: wykrywanie startuje dopiero po połączeniu z Home Assistant.
+
+Pełna lista rozwiązanych problemów: [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md#7-rozwiązane-problemy-październik-2026).
 
 ### Tryb Debug
-Włącz logowanie w ESPHome dla szczegółowej diagnostyki:
-```yaml
-logger:
-  level: DEBUG
-```
+Logi przez WiFi: `esphome logs esp_ver2.yaml --device voice-assistant.local`
+(albo kablem na COM4 – logger działa na `UART0`).
 
 ## Zasoby
 

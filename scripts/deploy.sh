@@ -13,12 +13,28 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
+# ESPHome z lokalnego środowiska .venv (Windows: Scripts, Linux/macOS: bin)
+for VENV_BIN in .venv/Scripts .venv/bin; do
+  [[ -d "$VENV_BIN" ]] && export PATH="$PWD/$VENV_BIN:$PATH" && break
+done
+# Polskie znaki w logach na konsoli Windows (cp1250)
+export PYTHONUTF8=1 PYTHONIOENCODING=utf-8
+# ESP-IDF (idf_tools.py) odmawia pracy, gdy widzi MSYSTEM z Git Bash/MSYS
+unset MSYSTEM
+# Windows: domyślny katalog narzędzi ESP-IDF przekracza limit 260 znaków ścieżki
+if [[ -d .venv/Scripts ]]; then
+  export ESPHOME_ESP_IDF_PREFIX="${ESPHOME_ESP_IDF_PREFIX:-C:\\ESPHome\\idf}"
+fi
+
 CONFIG="${CONFIG:-esp_ver2.yaml}"
 DEVICE="${1:-${ESP_DEVICE:-voice-assistant.local}}"
 LOG_SECONDS="${2:-60}"
 
-if [[ ! -f secrets.yaml ]]; then
-  echo "Brak secrets.yaml - skopiuj secrets.yaml.example i uzupełnij." >&2
+# secrets.yaml generujemy z .env (wzór: .env.example)
+if [[ -f .env ]]; then
+  python scripts/env2secrets.py
+elif [[ ! -f secrets.yaml ]]; then
+  echo "Brak .env - skopiuj .env.example do .env i uzupełnij." >&2
   exit 1
 fi
 

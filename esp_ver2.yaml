@@ -1,5 +1,5 @@
 # Płytka: ESP32-S3 DevKitC-1 N16R8 (MON16R8)
-# Piny zgodne z README: mikrofon sekcja 1_v4, głośnik sekcja 2_1, wyświetlacz sekcja 3.
+# Piny zgodne z README: mikrofon sekcja 1_v5, głośnik sekcja 2_1, wyświetlacz sekcja 3.
 esphome:
   name: voice-assistant
   friendly_name: voice-assistant
@@ -28,9 +28,9 @@ psram:
   mode: octal
   speed: 80MHz
 
-# Logi przez natywne USB (gniazdo "USB" na DevKitC-1, nie "UART")
+# Logi przez UART0 - płytka podłączona gniazdem "UART" (CH343, COM4)
 logger:
-  hardware_uart: USB_SERIAL_JTAG
+  hardware_uart: UART0
   level: DEBUG # VERY_VERBOSE pokazuje wszystko, ale spowalnia ESP
 
 # Enable Home Assistant API
@@ -70,8 +70,8 @@ globals:
 i2s_audio:
   # Magistrala Mikrofonu (Input)
   - id: i2s_in
-    i2s_lrclk_pin: GPIO3
-    i2s_bclk_pin: GPIO2
+    i2s_lrclk_pin: GPIO4
+    i2s_bclk_pin: GPIO5
 
   # Magistrala Głośnika (Output)
   - id: i2s_out
@@ -82,7 +82,7 @@ microphone:
   - platform: i2s_audio
     id: board_microphone
     i2s_audio_id: i2s_in
-    i2s_din_pin: GPIO1
+    i2s_din_pin: GPIO6
     adc_type: external
     pdm: false
     channel: left # INMP441 (L/R zwarty do GND)
