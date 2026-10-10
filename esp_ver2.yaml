@@ -178,7 +178,12 @@ micro_wake_word:
   id: wake_word_engine
   microphone: board_microphone
   models:
+    # internal: HA nie widzi modelu, więc nie może go wyłączyć (set_configuration z pustą
+    # listą aktywnych wake word wyłączało go i zapisywało ten stan we flashu).
+    # Nowe id = nowy klucz w preferencjach, bez starego zapisanego "wyłączony".
     - model: github://esphome/micro-wake-word-models/models/v2/okay_nabu.json@main
+      id: okay_nabu_local
+      internal: true
   on_wake_word_detected:
     - logger.log: "Wake Word detected! Starting Assistant..."
     - globals.set:
@@ -200,6 +205,7 @@ voice_assistant:
   # Słowo budzące wykrywamy dopiero, gdy HA jest połączony
   on_client_connected:
     - logger.log: "Połączono z Home Assistant - start wykrywania słowa budzącego"
+    - micro_wake_word.enable_model: okay_nabu_local
     - micro_wake_word.start:
 
   on_client_disconnected:
