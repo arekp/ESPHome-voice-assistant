@@ -13,3 +13,6 @@ __pycache__/
 .venv/
 .vscode/
 .idea/
+
+# Archiwum szablonu z Thingiverse (47 MB, potrzebne STL-e są rozpakowane obok)
+obudowa/szablon1/*.zip
