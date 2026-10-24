@@ -88,6 +88,29 @@ script:
             - logger.log: "Brak mowy przez 8 s - koniec nasłuchu"
             - voice_assistant.stop:
 
+  # Po zakończeniu nagrywania HA ma 30 s na odpowiedź (STT + agent + TTS). Bez tego
+  # brak odpowiedzi zostawia asystenta w AWAITING_RESPONSE z wyłączonym wake word.
+  - id: response_timeout
+    mode: restart
+    then:
+      - delay: 30s
+      - if:
+          condition:
+            lambda: 'return id(va_state) == 1 || id(va_state) == 2;'
+          then:
+            - logger.log:
+                format: "Brak odpowiedzi z HA przez 30 s - wracam do czuwania"
+                level: WARN
+            - voice_assistant.stop:
+            - globals.set:
+                id: va_state
+                value: '0'
+            - component.update: my_display
+            - delay: 500ms
+            - micro_wake_word.stop:
+            - delay: 300ms
+            - micro_wake_word.start:
+
 # Po ilu sekundach bezczynności włączyć wygaszacz (0 = nigdy) - ustawiane z HA
 number:
   - platform: template
@@ -181,8 +204,9 @@ micro_wake_word:
     # internal: HA nie widzi modelu, więc nie może go wyłączyć (set_configuration z pustą
     # listą aktywnych wake word wyłączało go i zapisywało ten stan we flashu).
     # Nowe id = nowy klucz w preferencjach, bez starego zapisanego "wyłączony".
-    - model: github://esphome/micro-wake-word-models/models/v2/okay_nabu.json@main
-      id: okay_nabu_local
+    # Własny model "Alfred"/"Alfredzie" (models/alfred.json, trening: docs/WAKE_WORD_ALFRED.md)
+    - model: models/alfred.json
+      id: alfred_local
       internal: true
   on_wake_word_detected:
     - logger.log: "Wake Word detected! Starting Assistant..."
@@ -205,7 +229,7 @@ voice_assistant:
   # Słowo budzące wykrywamy dopiero, gdy HA jest połączony
   on_client_connected:
     - logger.log: "Połączono z Home Assistant - start wykrywania słowa budzącego"
-    - micro_wake_word.enable_model: okay_nabu_local
+    - micro_wake_word.enable_model: alfred_local
     - micro_wake_word.start:
 
   on_client_disconnected:
@@ -228,6 +252,10 @@ voice_assistant:
   on_stt_vad_start:
     - script.stop: listen_timeout
 
+  # Koniec mowy - od teraz HA ma 30 s na odpowiedź
+  on_stt_vad_end:
+    - script.execute: response_timeout
+
   # Wykryto mowę, zaczyna przetwarzać
   on_stt_end:
     - logger.log:
@@ -246,7 +274,10 @@ voice_assistant:
     - component.update: my_display
 
   # Koniec interakcji (sukces lub po błędzie)
+  # UWAGA: on_idle NIE odpala się w trybie wake-word (odpala się tylko gdy continuous=true).
+  # Dlatego wznawiamy MWW tutaj, po skończeniu odtwarzania odpowiedzi.
   on_end:
+    - script.stop: response_timeout
     - delay: 1s
     - wait_until:
         condition:
@@ -257,6 +288,7 @@ voice_assistant:
         id: va_state
         value: '0' # Wróć do mrugania (Idle)
     - component.update: my_display
+    - logger.log: "Koniec rozmowy - wznawiamy detekcję wake word"
     - if:
         condition:
           and:

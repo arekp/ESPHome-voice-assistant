@@ -13,7 +13,7 @@ generuje z niego `secrets.yaml` dla `!secret` (robi to `scripts/deploy.sh`).
 Działa tylko w sesji uruchomionej na komputerze z podłączoną płytką
 (Claude Desktop / `claude` / `claude remote-control`), nie w chmurze.
 
-- ESPHome jest zainstalowany w `.venv` (Python 3.13, ESPHome 2026.9.1 – ta sama wersja co w HA) – używaj `.venv/Scripts/esphome.exe`
+- ESPHome jest zainstalowany w `.venv` (Python 3.13, ESPHome 2026.10.0 – ta sama wersja co w HA) – używaj `.venv/Scripts/esphome.exe`
   (`scripts/deploy.sh` dodaje `.venv` do PATH sam). Na Windows ustaw `PYTHONUTF8=1`.
 - Kompilacja z Git Bash: ESP-IDF odrzuca środowisko z `MSYSTEM` (MSYS dokleja ją nawet po `unset`),
   `deploy.sh` to obchodzi; ręcznie kompiluj z PowerShell. Długie ścieżki w Windows są wyłączone – nie budować
