@@ -69,11 +69,12 @@ def decode_opus(packets, rate):
     dec = av.CodecContext.create("libopus", "r")
     dec.sample_rate, dec.layout = rate, "mono"
     dec.open()
-    out = bytearray()
+    out, real_rate = bytearray(), rate
     for pk in packets:
         for fr in dec.decode(av.Packet(pk)):
+            real_rate = fr.sample_rate  # libopus zwraca 48 kHz niezależnie od nagłówka
             out += bytes(fr.planes[0])[: fr.samples * 2]
-    return bytes(out)
+    return bytes(out), real_rate
 
 
 async def main():
@@ -123,11 +124,11 @@ async def main():
                 if isinstance(m, bytes):
                     if first_audio is None:
                         first_audio = time.monotonic() - t_stop
-                        print(f"  pierwszy dźwięk odpowiedzi po {first_audio:.2f}s od końca mowy")
+                        print(f"  [{first_audio:6.2f}s] pierwszy dźwięk odpowiedzi")
                     audio.append(m)
                     continue
                 j = json.loads(m)
-                print(" ", {k: v for k, v in j.items() if k != "session_id"})
+                print(f"  [{time.monotonic() - t_stop:6.2f}s]", {k: v for k, v in j.items() if k != "session_id"})
                 if j.get("type") == "tts" and j.get("state") == "stop":
                     break
         except asyncio.TimeoutError:
@@ -135,11 +136,12 @@ async def main():
 
     if audio:
         Path(a.out).parent.mkdir(exist_ok=True)
-        pcm_out = decode_opus(audio, down_rate)
+        pcm_out, down_rate = decode_opus(audio, down_rate)
         with wave.open(a.out, "wb") as f:
             f.setnchannels(1), f.setsampwidth(2), f.setframerate(down_rate)
             f.writeframes(pcm_out)
-        print(f"Zapisano {a.out} ({len(pcm_out) / 2 / down_rate:.1f}s, {down_rate} Hz)")
+        print(f"Zapisano {a.out} ({len(pcm_out) / 2 / down_rate:.1f}s, {down_rate} Hz, "
+              f"{len(audio)} ramek = {len(audio) * FRAME_MS / 1000:.1f}s)")
     else:
         print("Brak audio w odpowiedzi.")
     return 0
