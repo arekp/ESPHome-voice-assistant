@@ -15,7 +15,7 @@ ESPHome `voice_assistant` mówi **natywnym API ESPHome do Home Assistanta**. Ser
 | | ESPHome → HA | XiaoZhi |
 |---|---|---|
 | Aktywacja/konfiguracja | API ESPHome (encrypted, port 6053) | `POST /xiaozhi/ota/` (HTTP) → zwraca adres WebSocket + token |
-| Transport audio | strumień PCM/Opus przez API ESPHome | **WebSocket** `ws://host:8000/xiaozhi/v1/`, ramki **Opus** (16 kHz mono wejście, 24 kHz wyjście, 60 ms) |
+| Transport audio | strumień PCM/Opus przez API ESPHome | **WebSocket** `ws://host:8001/xiaozhi/v1/`, ramki **Opus** (16 kHz mono wejście, 24 kHz wyjście, 60 ms) |
 | Sterowanie | zdarzenia `voice_assistant` | JSON: `hello`, `listen` (start/stop/detect), `tts` (start/stop/sentence_start), `stt`, `llm` (emocje), `abort` |
 | STT/LLM/TTS | pipeline HA | po stronie serwera (konfigurowane w panelu) |
 
@@ -26,11 +26,11 @@ Trzeba albo (A) napisać własny komponent/klienta WebSocket+Opus, albo (B) wgra
 
 - `GET :8002/` → panel zarządzania (nginx), działa.
 - `POST :8002/xiaozhi/ota/` (z `Device-Id`) → odpowiada poprawnie, **ale zwraca adresy placeholderowe**:
-  - `websocket.url = ws://xiaozhi.server.com:8000/xiaozhi/v1/`
+  - `websocket.url = ws://xiaozhi.server.com:8001/xiaozhi/v1/`
   - `activation.message = http://xiaozhi.server.com ...`
   - GET na OTA bez nagłówków: „OTA接口不正常，缺少websocket地址 … 参数管理 → server.websocket".
   - Czyli w panelu **nie jest ustawiony parametr `server.websocket`** (i `server.fronted_url`).
-- `:8000/xiaozhi/v1/` – zwykły GET i próba handshake WebSocket dają `404 Not found` (tekst w stylu Go/nginx, nie typowa odpowiedź
+- `:8001/xiaozhi/v1/` – zwykły GET i próba handshake WebSocket dają `404 Not found` (tekst w stylu Go/nginx, nie typowa odpowiedź
   Pythonowego serwera XiaoZhi). **Nie wiem, czy port 8000 jest w ogóle serwerem WebSocket XiaoZhi** – wymaga weryfikacji
   (docker-compose / reverse proxy). W instalacji standardowej `xiaozhi-server` słucha na 8000 (WS) i 8003 (HTTP/vision);
   8003 u Ciebie nie odpowiada.
@@ -40,7 +40,7 @@ Trzeba albo (A) napisać własny komponent/klienta WebSocket+Opus, albo (B) wgra
 ## Czego potrzebuję / co musisz zrobić na serwerze
 
 1. **Panel → Zarządzanie parametrami**: ustaw
-   - `server.websocket` = `ws://192.168.1.67:8000/xiaozhi/v1/` (i ewentualnie drugi adres po przecinku/średniku),
+   - `server.websocket` = `ws://192.168.1.67:8001/xiaozhi/v1/` (i ewentualnie drugi adres po przecinku/średniku),
    - `server.ota` = `http://192.168.1.67:8002/xiaozhi/ota/`,
    - `server.fronted_url` = `http://192.168.1.67:8002`.
 2. Potwierdź, że **port 8000 jest otwarty i obsługuje WebSocket** (`docker ps`, mapowanie portów, logi kontenera `xiaozhi-esp32-server`).
@@ -96,3 +96,26 @@ Jakość odpowiedzi zależy głównie od wybranych ASR/LLM/TTS, a nie od serwera
 - Który wariant: A (klient w ESPHome), B (stock firmware na drugiej płytce) czy C?
 - Czy XiaoZhi jest wdrożone w Dockerze i mam dostęp (SSH/`docker logs`) albo mogę zalogować się do panelu (login/hasło)?
 - Jakie ASR/LLM/TTS chcesz użyć (język: polski)?
+
+## Status (aktualizacja)
+
+- Serwer naprawiony: OTA `http://192.168.1.67:8002/xiaozhi/ota/`, WebSocket **`ws://192.168.1.67:8001/xiaozhi/v1/`**
+  (port 8000 był błędny). ASR: OpenAI `gpt-4o-mini-transcribe`, LLM: HA Conversation, TTS: Edge `pl-PL-ZofiaNeural`.
+- Test serwera bez płytki: `scripts/xiaozhi_test.py` (wymaga aktywacji urządzenia testowego w panelu).
+- **Wariant B** (stock firmware `78/xiaozhi-esp32`): płytka `alfred-s3` w `xiaozhi-firmware/` (piny z `esp_ver2.yaml`).
+
+### Budowanie firmware (wariant B)
+
+Stock firmware wymaga ESP-IDF >= 6.0.1 (zalecane `release/v6.1`); ESPHome używa IDF 5.5, więc potrzebny jest osobny.
+
+```
+git clone -b release/v6.1 --depth 1 --recursive --shallow-submodules https://github.com/espressif/esp-idf.git C:/xz/esp-idf
+git clone --depth 1 https://github.com/78/xiaozhi-esp32.git C:/xz/xiaozhi-esp32
+# PowerShell, krótkie ścieżki:
+$env:IDF_TOOLS_PATH='C:\xz\idf-tools'; C:\xz\esp-idf\install.ps1 esp32s3; . C:\xz\esp-idf\export.ps1
+python xiaozhi-firmware/apply.py C:/xz/xiaozhi-esp32
+cd C:/xz/xiaozhi-esp32; python scripts/build.py alfred-s3 --language pl-PL
+idf.py -p COM4 flash   # pierwsze wgranie przez USB; potem OTA z serwera (panel: zarządzanie firmware)
+```
+
+Powrót do ESPHome: `scripts/deploy.sh COM4` (nadpisuje firmware przez USB).
